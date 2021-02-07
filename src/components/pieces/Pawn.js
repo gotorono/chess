@@ -21,7 +21,7 @@ function Pawn(props) {
           let posX = newX(x, pieceRef, props.playing);
           let posY = newY(y, pieceRef, props.playing);
 
-          console.log(posX, posY); 
+          // console.log(posX, posY); 
           if (
             pawnCheck(
               props.board,

@@ -4,6 +4,7 @@ table.mainBoard {
     position: relative;
     border-spacing: 0;
     overflow: visible;
+    height: 100%;
 }
 
 table.mainBoard.black {
@@ -135,9 +136,9 @@ table.mainBoard tr {
 .promoteWrapper > div {
     outline: black;
     cursor: pointer;
-    width: 100px;
-    height: 100px;
-    font-size: 87px;
+    width: 10vh;
+    height: 10vh;
+    font-size: 8.5vh;
     display: flex;
     justify-content: center;
     align-items: flex-end;
@@ -150,7 +151,7 @@ table.mainBoard tr {
     z-index: 1;
     user-select: none;
     font-family: 'Nunito';
-    font-size: .875em;
+    font-size: 1.75vh;
     font-weight: bold;
     opacity: .325;
 }
@@ -161,15 +162,15 @@ table.mainBoard.black .promoteWrapper > div {
 
 table.mainBoard tr td {
     position: relative;
-    height: 100px;
-    width: 100px;
+    height: 10vh;
+    width: 10vh;
     display: flex;
     justify-content: center;
     align-items: center;
     background-color: lightgray;
     user-select: none;
     padding: 0;
-    font-size: 87px;
+    font-size: 8.5vh;
 }
 
 table.mainBoard tr:nth-child(1n) td:nth-child(2n) {

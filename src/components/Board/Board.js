@@ -65,11 +65,17 @@ function Board(props) {
     black: [],
   });
 
+  const [tableWidth, setTableWidth] = useState(0);
   const [boardHistory, setBoardHistory] = useState([]);
   const [moveHistory, setMoveHistory] = useState([]);
   const [tableBoard, setTableBoard] = useState([]);
 
   const tableRef = useRef();
+
+  useEffect(() => {
+    if(tableRef.current && tableRef.current.clientWidth)
+      setTableWidth(tableRef.current.clientWidth);
+  }, [tableRef.current])
 
   // const [board, setBoard] = useState([
   //   [13, 14, 15, 12, 11, 15, 14, 13],
@@ -108,7 +114,7 @@ function Board(props) {
 
   // k1 | q2 | r3 | n4 | b5 | p6
 
-  const refs = new Array(8).fill(new Array(8).fill(React.createRef()))
+  const refs = new Array(8).fill(new Array(8).fill(React.createRef()));
 
   console.log(refs);
 
@@ -299,39 +305,43 @@ function Board(props) {
     [board, turn, canCastle, moveHistory]
   );
 
-  const getNotation = () => {
+  const getNotation = useCallback(() => {
     let letters = ["a", "b", "c", "d", "e", "f", "g", "h"];
     let numbers = [1, 2, 3, 4, 5, 6, 7, 8];
 
     let notation = [
-      letters.map((letter, i) => (
-        <div
-          className="mark"
-          style={{
-            bottom: 1,
-            left: (i + 1) * 100 + "px",
-            marginLeft: -13,
-          }}
-        >
-          {props.playing === "black" ? letters[letters.length - 1 - i] : letter}
-        </div>
-      )),
-      numbers.map((number, i) => (
-        <div
-          className="mark"
-          style={{
-            left: 5,
-            bottom: (i + 1) * 100 + "px",
-            marginBottom: -22,
-          }}
-        >
-          {props.playing === "black" ? numbers[numbers.length - 1 - i] : number}
-        </div>
-      )),
-    ];
+        letters.map((letter, i) => (
+          <div
+            className="mark"
+            style={{
+              bottom: 1,
+              left: ((i + 1) * tableWidth) / 8 + "px",
+              marginLeft: "-1.425vh",
+            }}
+          >
+            {props.playing === "black"
+              ? letters[letters.length - 1 - i]
+              : letter}
+          </div>
+        )),
+        numbers.map((number, i) => (
+          <div
+            className="mark"
+            style={{
+              left: 5,
+              bottom: ((i + 1) * tableWidth) / 8 + "px",
+              marginBottom: -22,
+            }}
+          >
+            {props.playing === "black"
+              ? numbers[numbers.length - 1 - i]
+              : number}
+          </div>
+        )),
+      ];
 
     return notation;
-  };
+  }, [tableWidth]);
 
   const getCaptures = (captures, capturesEnemy) => {
     const getScore = (pieces, piecesEnemy) => {
@@ -377,10 +387,6 @@ function Board(props) {
 
       newBoard[oldPos.y][oldPos.x] = 0;
       newBoard[newPos.y][newPos.x] = piece;
-
-      for(let i = 0; i < 8; i++)
-        for(let j = 0; j < 8; j++)
-          refs[i][j].classList.remove("active");
 
       if (!checkIfKingIsInCheck(newBoard, turn)) {
         if (turn === "white") {
@@ -591,7 +597,10 @@ function Board(props) {
                             canCastle={canCastle.white}
                             castles={turn === "white" ? castles : null}
                           >
-                            <div className="dot" ref={(el) => refs[y][x] = el}></div>
+                            <div
+                              className="dot"
+                              ref={(el) => (refs[y][x] = el)}
+                            ></div>
                           </King>
                         );
                       case 2:
@@ -604,7 +613,10 @@ function Board(props) {
                             board={_.cloneDeep(board)}
                             playing={props.playing}
                           >
-                            <div className="dot" ref={(el) => refs[y][x] = el}></div>
+                            <div
+                              className="dot"
+                              ref={(el) => (refs[y][x] = el)}
+                            ></div>
                           </Queen>
                         );
                       case 3:
@@ -617,7 +629,10 @@ function Board(props) {
                             board={_.cloneDeep(board)}
                             playing={props.playing}
                           >
-                            <div className="dot" ref={(el) => refs[y][x] = el}></div>
+                            <div
+                              className="dot"
+                              ref={(el) => (refs[y][x] = el)}
+                            ></div>
                           </Rook>
                         );
                       case 4:
@@ -631,7 +646,10 @@ function Board(props) {
                             playing={props.playing}
                             grabbing={grabbing}
                           >
-                            <div className="dot" ref={(el) => refs[y][x] = el}></div>
+                            <div
+                              className="dot"
+                              ref={(el) => (refs[y][x] = el)}
+                            ></div>
                           </Knight>
                         );
                       case 5:
@@ -644,7 +662,10 @@ function Board(props) {
                             board={_.cloneDeep(board)}
                             playing={props.playing}
                           >
-                            <div className="dot" ref={(el) => refs[y][x] = el}></div>
+                            <div
+                              className="dot"
+                              ref={(el) => (refs[y][x] = el)}
+                            ></div>
                           </Bishop>
                         );
                       case 6:
@@ -668,7 +689,10 @@ function Board(props) {
                                 : null
                             }
                           >
-                            <div className="dot" ref={(el) => refs[y][x] = el}></div>
+                            <div
+                              className="dot"
+                              ref={(el) => (refs[y][x] = el)}
+                            ></div>
                           </Pawn>
                         );
                       case 11:
@@ -683,7 +707,10 @@ function Board(props) {
                             canCastle={canCastle.black}
                             castles={turn === "black" ? castles : null}
                           >
-                            <div className="dot" ref={(el) => refs[y][x] = el}></div>
+                            <div
+                              className="dot"
+                              ref={(el) => (refs[y][x] = el)}
+                            ></div>
                           </King>
                         );
                       case 12:
@@ -696,7 +723,10 @@ function Board(props) {
                             board={_.cloneDeep(board)}
                             playing={props.playing}
                           >
-                            <div className="dot" ref={(el) => refs[y][x] = el}></div>
+                            <div
+                              className="dot"
+                              ref={(el) => (refs[y][x] = el)}
+                            ></div>
                           </Queen>
                         );
                       case 13:
@@ -709,7 +739,10 @@ function Board(props) {
                             board={_.cloneDeep(board)}
                             playing={props.playing}
                           >
-                            <div className="dot" ref={(el) => refs[y][x] = el}></div>
+                            <div
+                              className="dot"
+                              ref={(el) => (refs[y][x] = el)}
+                            ></div>
                           </Rook>
                         );
                       case 14:
@@ -723,7 +756,10 @@ function Board(props) {
                             playing={props.playing}
                             grabbing={grabbing}
                           >
-                              <div className="dot" ref={(el) => refs[y][x] = el}></div>
+                            <div
+                              className="dot"
+                              ref={(el) => (refs[y][x] = el)}
+                            ></div>
                           </Knight>
                         );
                       case 15:
@@ -736,7 +772,10 @@ function Board(props) {
                             board={_.cloneDeep(board)}
                             playing={props.playing}
                           >
-                            <div className="dot" ref={(el) => refs[y][x] = el}></div>
+                            <div
+                              className="dot"
+                              ref={(el) => (refs[y][x] = el)}
+                            ></div>
                           </Bishop>
                         );
                       case 16:
@@ -760,13 +799,21 @@ function Board(props) {
                                 : null
                             }
                           >
-                            <div className="dot" key={`DOT${y}-${x}`} ref={(el) => refs[y][x] = el}></div>
+                            <div
+                              className="dot"
+                              key={`DOT${y}-${x}`}
+                              ref={(el) => (refs[y][x] = el)}
+                            ></div>
                           </Pawn>
                         );
                       default:
                         return (
                           <td key={`e${y}-${x}`}>
-                            <div className="dot" ref={(el) => refs[y][x] = el} onClick={() => console.log(refs)}></div>
+                            <div
+                              className="dot"
+                              ref={(el) => (refs[y][x] = el)}
+                              onClick={() => console.log(refs)}
+                            ></div>
                           </td>
                         );
                     }
@@ -917,6 +964,73 @@ function Board(props) {
     [canCastle, enPassant, props.playing, turn, place, enPassantMove, castles]
   );
 
+  const promoteWrapper = () => {
+    return (
+      <div
+        className={classnames(
+          "promoteWrapper",
+          props.playing === "black" ? "black" : ""
+        )}
+        style={{
+          transform: `translate(${
+            props.playing === "black"
+              ? tableWidth -
+                tableWidth / 8 -
+                promote.newPos.x * (tableWidth / 8) +
+                tableRef.current.offsetLeft
+              : promote.newPos.x * (tableWidth / 8) +
+                tableRef.current.offsetLeft
+          }px, 0px)`,
+        }}
+      >
+        <div
+          onClick={() =>
+            setPromote({
+              ...promote,
+              state: false,
+              piece: props.playing === "black" ? 12 : 2,
+            })
+          }
+        >
+          Q
+        </div>
+        <div
+          onClick={() =>
+            setPromote({
+              ...promote,
+              state: false,
+              piece: props.playing === "black" ? 14 : 4,
+            })
+          }
+        >
+          N
+        </div>
+        <div
+          onClick={() =>
+            setPromote({
+              ...promote,
+              state: false,
+              piece: props.playing === "black" ? 13 : 3,
+            })
+          }
+        >
+          R
+        </div>
+        <div
+          onClick={() =>
+            setPromote({
+              ...promote,
+              state: false,
+              piece: props.playing === "black" ? 15 : 5,
+            })
+          }
+        >
+          B
+        </div>
+      </div>
+    );
+  };
+
   useEffect(() => {
     if (checkIfKingIsInCheck(_.cloneDeep(board), turn)) {
       console.log("check");
@@ -948,83 +1062,24 @@ function Board(props) {
   }, [JSON.stringify(boardHistoryLive), JSON.stringify(board)]);
 
   const grabbing = (state, squares) => {
-    if(state === true) {
-      console.log(refs)
+    if (state === true) {
+      console.log(refs);
       squares.map((square) => {
         refs[square.y][square.x].classList.add("active");
-      })
-    }
-    else {
+      });
+    } else {
       squares.map((square) => {
         refs[square.y][square.x].classList.remove("active");
-      })
+      });
     }
-  }
+  };
 
   return (
     <div className="chessboardWrapper">
       <div className="chessboard">
-        {promote.state === true ? (
-          <div
-            className={classnames(
-              "promoteWrapper",
-              props.playing === "black" ? "black" : ""
-            )}
-            style={{
-              transform: `translate(${
-                props.playing === "black"
-                  ? 700 - promote.newPos.x * 100 + tableRef.current.offsetLeft
-                  : promote.newPos.x * 100 + tableRef.current.offsetLeft
-              }px, 0px)`,
-            }}
-          >
-            <div
-              onClick={() =>
-                setPromote({
-                  ...promote,
-                  state: false,
-                  piece: props.playing === "black" ? 12 : 2,
-                })
-              }
-            >
-              Q
-            </div>
-            <div
-              onClick={() =>
-                setPromote({
-                  ...promote,
-                  state: false,
-                  piece: props.playing === "black" ? 14 : 4,
-                })
-              }
-            >
-              N
-            </div>
-            <div
-              onClick={() =>
-                setPromote({
-                  ...promote,
-                  state: false,
-                  piece: props.playing === "black" ? 13 : 3,
-                })
-              }
-            >
-              R
-            </div>
-            <div
-              onClick={() =>
-                setPromote({
-                  ...promote,
-                  state: false,
-                  piece: props.playing === "black" ? 15 : 5,
-                })
-              }
-            >
-              B
-            </div>
-          </div>
-        ) : null}
-
+        {promote.state === true
+          ? promoteWrapper()
+          : null}
         {getNotation()}
         <div
           className={classnames(
@@ -1045,6 +1100,7 @@ function Board(props) {
         >
           {tableBoard}
         </table>
+
         <div
           className={classnames(
             "captures",
