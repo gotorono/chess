@@ -1,10 +1,4 @@
 export const newX = (x, pieceRef, playing) => {
-  // console.log(pieceRef.current.parentNode.parentNode.parentNode.parentNode.clientWidth)
-  console.log(Math.floor(
-    Math.abs(
-      (x - pieceRef.current.parentNode.offsetParent.offsetLeft - pieceRef.current.parentNode.parentNode.parentNode.parentNode.clientWidth - pieceRef.current.offsetParent.offsetParent.offsetParent.offsetLeft) / (pieceRef.current.parentNode.parentNode.parentNode.parentNode.clientWidth / 8)
-    )
-  ))
   if (playing === "black")
     return Math.floor(
       Math.abs(

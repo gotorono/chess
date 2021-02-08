@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import useMousePosition from "./useMousePosition";
 
-import { rookCheck } from "./validatePlacement";
+import { rookCheck, availableRookSquares } from "./validatePlacement";
 
 import { newX, newY, translateX, translateY } from "./positionPlacement";
 
@@ -9,10 +9,22 @@ import classnames from "classnames";
 
 function Rook(props) {
   const [isDown, setIsDown] = useState(false);
+  const [available, setAvailable] = useState([])
 
   const pieceRef = React.useRef();
 
   const { x, y } = useMousePosition(isDown);
+
+  useEffect(() => {
+    setAvailable(availableRookSquares(props.board, props.color, props.position, props.color === "black" ? 15 : 5))
+  }, [props.board])
+
+  useEffect(() => {
+    if(isDown === true)
+      props.grabbing(true, available)
+    else
+      props.grabbing(false, available)
+  }, [available, isDown])
 
   const mouseRightClick = useCallback(
     (e) => {
@@ -38,12 +50,7 @@ function Rook(props) {
           let posY = newY(y, pieceRef, props.playing);
 
           if (
-            rookCheck(
-              props.board,
-              props.position,
-              { x: posX, y: posY },
-              props.color
-            )
+            available.find((pos) => pos.x === posX && pos.y === posY)
           ) {
             if (props.place)
               props.place(

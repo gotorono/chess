@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import useMousePosition from "./useMousePosition";
 
-import { kingCheck } from "./validatePlacement";
+import { kingCheck, kingSquares } from "./validatePlacement";
 
 import { newX, newY, translateX, translateY } from "./positionPlacement";
 

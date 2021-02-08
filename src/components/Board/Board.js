@@ -114,7 +114,7 @@ function Board(props) {
 
   // k1 | q2 | r3 | n4 | b5 | p6
 
-  const refs = new Array(8).fill(new Array(8).fill(React.createRef()));
+  const refs = useRef(new Array(64))
 
   console.log(refs);
 
@@ -577,6 +577,9 @@ function Board(props) {
 
   const mapBoard = useCallback(
     (state, board) => {
+      // for(let i = 0; i < refs.length; i++)
+        // refs.current[i].classList.remove("active");
+
       if (state === "live")
         return (
           <tbody>
@@ -596,10 +599,11 @@ function Board(props) {
                             playing={props.playing}
                             canCastle={canCastle.white}
                             castles={turn === "white" ? castles : null}
+                            grabbing={grabbing}
                           >
                             <div
                               className="dot"
-                              ref={(el) => (refs[y][x] = el)}
+                              ref={(el) => refs.current[(y * 8) + x] = el}
                             ></div>
                           </King>
                         );
@@ -612,10 +616,11 @@ function Board(props) {
                             place={turn === "white" ? place : null}
                             board={_.cloneDeep(board)}
                             playing={props.playing}
+                            grabbing={grabbing}
                           >
                             <div
                               className="dot"
-                              ref={(el) => (refs[y][x] = el)}
+                              ref={(el) => refs.current[(y * 8) + x] = el}
                             ></div>
                           </Queen>
                         );
@@ -628,10 +633,11 @@ function Board(props) {
                             place={turn === "white" ? place : null}
                             board={_.cloneDeep(board)}
                             playing={props.playing}
+                            grabbing={grabbing}
                           >
                             <div
                               className="dot"
-                              ref={(el) => (refs[y][x] = el)}
+                              ref={(el) => refs.current[(y * 8) + x] = el}
                             ></div>
                           </Rook>
                         );
@@ -648,7 +654,7 @@ function Board(props) {
                           >
                             <div
                               className="dot"
-                              ref={(el) => (refs[y][x] = el)}
+                              ref={(el) => refs.current[(y * 8) + x] = el}
                             ></div>
                           </Knight>
                         );
@@ -661,10 +667,11 @@ function Board(props) {
                             place={turn === "white" ? place : null}
                             board={_.cloneDeep(board)}
                             playing={props.playing}
+                            grabbing={grabbing}
                           >
                             <div
                               className="dot"
-                              ref={(el) => (refs[y][x] = el)}
+                              ref={(el) => refs.current[(y * 8) + x] = el}
                             ></div>
                           </Bishop>
                         );
@@ -688,10 +695,11 @@ function Board(props) {
                                 ? enPassantMove
                                 : null
                             }
+                            grabbing={grabbing}
                           >
                             <div
                               className="dot"
-                              ref={(el) => (refs[y][x] = el)}
+                              ref={(el) => refs.current[(y * 8) + x] = el}
                             ></div>
                           </Pawn>
                         );
@@ -706,10 +714,11 @@ function Board(props) {
                             playing={props.playing}
                             canCastle={canCastle.black}
                             castles={turn === "black" ? castles : null}
+                            grabbing={grabbing}
                           >
                             <div
                               className="dot"
-                              ref={(el) => (refs[y][x] = el)}
+                              ref={(el) => refs.current[(y * 8) + x] = el}
                             ></div>
                           </King>
                         );
@@ -722,10 +731,11 @@ function Board(props) {
                             place={turn === "black" ? place : null}
                             board={_.cloneDeep(board)}
                             playing={props.playing}
+                            grabbing={grabbing}
                           >
                             <div
                               className="dot"
-                              ref={(el) => (refs[y][x] = el)}
+                              ref={(el) => refs.current[(y * 8) + x] = el}
                             ></div>
                           </Queen>
                         );
@@ -738,10 +748,11 @@ function Board(props) {
                             place={turn === "black" ? place : null}
                             board={_.cloneDeep(board)}
                             playing={props.playing}
+                            grabbing={grabbing}
                           >
                             <div
                               className="dot"
-                              ref={(el) => (refs[y][x] = el)}
+                              ref={(el) => refs.current[(y * 8) + x] = el}
                             ></div>
                           </Rook>
                         );
@@ -758,7 +769,7 @@ function Board(props) {
                           >
                             <div
                               className="dot"
-                              ref={(el) => (refs[y][x] = el)}
+                              ref={(el) => refs.current[(y * 8) + x] = el}
                             ></div>
                           </Knight>
                         );
@@ -771,10 +782,11 @@ function Board(props) {
                             place={turn === "black" ? place : null}
                             board={_.cloneDeep(board)}
                             playing={props.playing}
+                            grabbing={grabbing}
                           >
                             <div
                               className="dot"
-                              ref={(el) => (refs[y][x] = el)}
+                              ref={(el) => refs.current[(y * 8) + x] = el}
                             ></div>
                           </Bishop>
                         );
@@ -798,11 +810,11 @@ function Board(props) {
                                 ? enPassantMove
                                 : null
                             }
+                            grabbing={grabbing}
                           >
                             <div
                               className="dot"
-                              key={`DOT${y}-${x}`}
-                              ref={(el) => (refs[y][x] = el)}
+                              ref={(el) => refs.current[(y * 8) + x] = el}
                             ></div>
                           </Pawn>
                         );
@@ -811,8 +823,8 @@ function Board(props) {
                           <td key={`e${y}-${x}`}>
                             <div
                               className="dot"
-                              ref={(el) => (refs[y][x] = el)}
-                              onClick={() => console.log(refs)}
+                              ref={(el) => refs.current[(y * 8) + x] = el}
+                              // onClick={() => console.log(y * 7 + x)}
                             ></div>
                           </td>
                         );
@@ -961,7 +973,7 @@ function Board(props) {
           </tbody>
         );
     },
-    [canCastle, enPassant, props.playing, turn, place, enPassantMove, castles]
+    [canCastle, enPassant, props.playing, turn, place, enPassantMove, castles, refs]
   );
 
   const promoteWrapper = () => {
@@ -1046,6 +1058,11 @@ function Board(props) {
       console.log("DRAW");
     }
 
+    for(let i = 0; i < 64; i++) {
+      if(refs.current[i])
+      refs.current[i].classList.remove('active');
+    }
+
     setTableBoard(
       boardHistoryLive !== null
         ? mapBoard("history", boardHistoryLive)
@@ -1063,13 +1080,14 @@ function Board(props) {
 
   const grabbing = (state, squares) => {
     if (state === true) {
-      console.log(refs);
       squares.map((square) => {
-        refs[square.y][square.x].classList.add("active");
+        if(refs.current[square.y * 8 + square.x])
+        refs.current[square.y * 8 + square.x].classList.add('active');
       });
     } else {
       squares.map((square) => {
-        refs[square.y][square.x].classList.remove("active");
+        if(refs.current[square.y * 8 + square.x])
+        refs.current[square.y * 8 + square.x].classList.remove('active');
       });
     }
   };

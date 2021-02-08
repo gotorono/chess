@@ -3,16 +3,28 @@ import useMousePosition from "./useMousePosition";
 
 import classnames from "classnames";
 
-import { bishopCheck } from "./validatePlacement";
+import { bishopCheck, availableBishopSquares } from "./validatePlacement";
 
 import { newX, newY, translateX, translateY } from "./positionPlacement";
 
 function Bishop(props) {
   const [isDown, setIsDown] = useState(false);
+  const [available, setAvailable] = useState([])
 
   const pieceRef = React.useRef();
 
   const { x, y } = useMousePosition(isDown);
+
+  useEffect(() => {
+    setAvailable(availableBishopSquares(props.board, props.color, props.position, props.color === "black" ? 15 : 5))
+  }, [props.board])
+
+  useEffect(() => {
+    if(isDown === true)
+      props.grabbing(true, available)
+    else
+      props.grabbing(false, available)
+  }, [available, isDown])
 
   const mouseRightClick = useCallback(
     (e) => {
@@ -38,12 +50,7 @@ function Bishop(props) {
           let posY = newY(y, pieceRef, props.playing);
 
           if (
-            bishopCheck(
-              props.board,
-              props.position,
-              { x: posX, y: posY },
-              props.color
-            )
+            available.find((pos) => pos.x === posX && pos.y === posY)
           ) {
             if (props.place)
               props.place(

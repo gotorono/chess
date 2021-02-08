@@ -50,12 +50,7 @@ function Knight(props) {
           let posY = newY(y, pieceRef, props.playing);
 
           if (
-            knightCheck(
-              props.board,
-              props.position,
-              { x: posX, y: posY },
-              props.color
-            )
+            available.find((pos) => pos.x === posX && pos.y === posY)
           ) {
             if (props.place)
               props.place(
