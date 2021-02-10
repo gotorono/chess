@@ -7,6 +7,8 @@ import _ from "lodash";
 
 import classnames from "classnames";
 
+import moveSoundFile from './audio/move.wav'
+
 import King from "../pieces/King";
 import Rook from "../pieces/Rook";
 import Bishop from "../pieces/Bishop";
@@ -16,10 +18,11 @@ import Pawn from "../pieces/Pawn";
 
 import { getPieceName } from "./position";
 
+import { getBoardSize } from "./boardSize";
+
 import {
   checkIfKingIsInCheck,
-  isCheckmate,
-  checkIfStalemate,
+  isCheckmateOrStalemate,
   availableKnightSquares,
   availableBishopSquares,
   availableQueenSquares,
@@ -29,7 +32,8 @@ import {
 } from "../pieces/validatePlacement";
 
 function Board(props) {
-  // const [isDown, setIsDown] = useState(false);
+  const [isDown, setIsDown] = useState({ state: false, pos: { x: 0, y: 0 } });
+  const [boardSize, setBoardSize] = useState({});
 
   const [turn, setTurn] = useState("white");
   const [promote, setPromote] = useState({
@@ -65,28 +69,11 @@ function Board(props) {
     black: [],
   });
 
-  const [tableWidth, setTableWidth] = useState(0);
   const [boardHistory, setBoardHistory] = useState([]);
   const [moveHistory, setMoveHistory] = useState([]);
   const [tableBoard, setTableBoard] = useState([]);
 
   const tableRef = useRef();
-
-  useEffect(() => {
-    if(tableRef.current && tableRef.current.clientWidth)
-      setTableWidth(tableRef.current.clientWidth);
-  }, [tableRef.current])
-
-  // const [board, setBoard] = useState([
-  //   [13, 14, 15, 12, 11, 15, 14, 13],
-  //   [16, 16, 16, 16, 16, 16, 16, 16],
-  //   [0, 0, 0, 0, 0, 0, 0, 0],
-  //   [0, 0, 0, 0, 0, 0, 0, 0],
-  //   [0, 0, 0, 0, 0, 0, 0, 0],
-  //   [0, 0, 0, 0, 0, 0, 0, 0],
-  //   [6, 6, 6, 6, 6, 6, 6, 6],
-  //   [3, 4, 5, 2, 1, 5, 4, 3],
-  // ]);
 
   const [board, setBoard] = useState([
     [13, 14, 15, 12, 11, 15, 14, 13],
@@ -101,37 +88,93 @@ function Board(props) {
 
   // const [board, setBoard] = useState([
   //   [0, 0, 0, 0, 0, 0, 0, 0],
+  //   [0, 0, 0, 0, 0, 16, 0, 0],
   //   [0, 0, 0, 0, 0, 0, 0, 0],
-  //   [0, 0, 0, 0, 0, 0, 0, 0],
-  //   [0, 0, 0, 0, 0, 0, 0, 0],
+  //   [0, 0, 3, 0, 0, 0, 0, 0],
   //   [0, 0, 0, 11, 0, 0, 0, 0],
   //   [0, 0, 0, 0, 0, 0, 0, 0],
-  //   [13, 0, 4, 0, 0, 0, 0, 0],
-  //   [13, 0, 0, 0, 0, 1, 0, 0],
+  //   [0, 0, 0, 0, 0, 0, 0, 0],
+  //   [0, 0, 0, 0, 0, 1, 0, 0],
   // ]);
 
-  const [boardHistoryLive, setBoardHistoryLive] = useState(null);
+  const [boardHistoryLive, setBoardHistoryLive] = useState({
+    state: null,
+    index: -1,
+  });
 
   // k1 | q2 | r3 | n4 | b5 | p6
 
-  const refs = useRef(new Array(64))
-
-  console.log(refs);
-
-  // useEffect(() => {
-
-  // }, [JSON.stringify(board)])
+  const refs = useRef(new Array(64));
 
   const setLiveBoard = () => {
-    setBoardHistoryLive(null);
+    setBoardHistoryLive({ state: null, index: -1 });
   };
 
   const setLiveHistoryBoard = useCallback(
-    (i) => {
-      setBoardHistoryLive(boardHistory[i]);
+    (i, origin) => {
+      if (origin === "left") {
+        if (
+          boardHistory[moveHistory.length - 1] &&
+          boardHistoryLive.index === -1
+        )
+          setBoardHistoryLive({
+            state: boardHistory[moveHistory.length - 1],
+            index: moveHistory.length - 1,
+          });
+        else if (
+          boardHistory[boardHistoryLive.index - 1] &&
+          boardHistoryLive.index !== 0
+        )
+          setBoardHistoryLive({
+            state: boardHistory[boardHistoryLive.index - 1],
+            index: boardHistoryLive.index - 1,
+          });
+      } else if (origin === "right") {
+        if (
+          boardHistoryLive.index !== -1 &&
+          boardHistoryLive.index + 1 < boardHistory.length &&
+          boardHistoryLive.index !== boardHistory.length - 2
+        )
+          setBoardHistoryLive({
+            state: boardHistory[boardHistoryLive.index + 1],
+            index: boardHistoryLive.index + 1,
+          });
+        else if(boardHistoryLive.index === boardHistory.length - 2)
+          setLiveBoard();
+        
+      } else setBoardHistoryLive({ state: boardHistory[i], index: i });
     },
-    [boardHistory]
+    [boardHistory, boardHistoryLive.index]
   );
+
+  const keyPressHistory = (e) => {
+    switch (e.key) {
+      case "ArrowLeft":
+        e.preventDefault();
+        setLiveHistoryBoard(0, "left");
+        break;
+      case "ArrowRight":
+        e.preventDefault();
+        setLiveHistoryBoard(0, "right");
+        break;
+    }
+  };
+
+  const moveSound = new Audio(moveSoundFile);
+
+
+  useEffect(() => {
+    if (tableRef.current && tableRef.current.clientWidth) {
+      setBoardSize(getBoardSize(window.innerHeight, window.innerWidth));
+      window.addEventListener("resize", () =>
+        setBoardSize(getBoardSize(window.innerWidth, window.innerHeight))
+      );
+
+      document.addEventListener("keydown", keyPressHistory);
+
+      return () => document.removeEventListener("keydown", keyPressHistory);
+    }
+  }, [tableRef.current, setLiveHistoryBoard]);
 
   const getAvailableSquares = (oldBoard, oldPos, newPos, piece, color) => {
     let merged = [];
@@ -211,7 +254,7 @@ function Board(props) {
                 _.cloneDeep(newBoard),
                 turn === "white" ? "black" : "white"
               ) === true
-                ? isCheckmate(
+                ? isCheckmateOrStalemate(
                     _.cloneDeep(newBoard),
                     turn === "white" ? "black" : "white"
                   ) === true
@@ -247,9 +290,10 @@ function Board(props) {
               _.cloneDeep(newBoard),
               turn === "white" ? "black" : "white"
             ) === true
-              ? isCheckmate(
+              ? isCheckmateOrStalemate(
                   _.cloneDeep(newBoard),
-                  turn === "white" ? "black" : "white"
+                  turn === "white" ? "black" : "white",
+                  enPassant[turn]
                 ) === true
               : false,
           from: { y: promote.oldPos.y, x: promote.oldPos.x },
@@ -295,6 +339,8 @@ function Board(props) {
           ...moveHistory,
           {
             side,
+            from: { y: oldPos.y, x: oldPos.x },
+            to: { y: newPos.y, x: newPos.x },
           },
         ]);
         setBoard(newBoard);
@@ -310,38 +356,36 @@ function Board(props) {
     let numbers = [1, 2, 3, 4, 5, 6, 7, 8];
 
     let notation = [
-        letters.map((letter, i) => (
-          <div
-            className="mark"
-            style={{
-              bottom: 1,
-              left: ((i + 1) * tableWidth) / 8 + "px",
-              marginLeft: "-1.425vh",
-            }}
-          >
-            {props.playing === "black"
-              ? letters[letters.length - 1 - i]
-              : letter}
-          </div>
-        )),
-        numbers.map((number, i) => (
-          <div
-            className="mark"
-            style={{
-              left: 5,
-              bottom: ((i + 1) * tableWidth) / 8 + "px",
-              marginBottom: -22,
-            }}
-          >
-            {props.playing === "black"
-              ? numbers[numbers.length - 1 - i]
-              : number}
-          </div>
-        )),
-      ];
+      letters.map((letter, i) => (
+        <div
+          className="mark"
+          style={boardSize.width ? {
+            bottom: 1,
+            left: ((i + 1) * boardSize.width) / 8,
+            marginLeft: -((0.15 * boardSize.width) / 8),
+            fontSize: (0.175 * boardSize.width) / 8,
+          } : null}
+        >
+          {props.playing === "black" ? letters[letters.length - 1 - i] : letter}
+        </div>
+      )),
+      numbers.map((number, i) => (
+        <div
+          className="mark"
+          style={boardSize.width ? {
+            left: 5,
+            bottom: ((i + 1) * boardSize.width) / 8,
+            marginBottom: -((0.245 * boardSize.width) / 8),
+            fontSize: (0.175 * boardSize.width) / 8,
+          } : null}
+        >
+          {props.playing === "black" ? numbers[numbers.length - 1 - i] : number}
+        </div>
+      )),
+    ];
 
     return notation;
-  }, [tableWidth]);
+  }, [boardSize.width]);
 
   const getCaptures = (captures, capturesEnemy) => {
     const getScore = (pieces, piecesEnemy) => {
@@ -556,9 +600,10 @@ function Board(props) {
                   _.cloneDeep(newBoard),
                   turn === "white" ? "black" : "white"
                 ) === true
-                  ? isCheckmate(
+                  ? isCheckmateOrStalemate(
                       _.cloneDeep(newBoard),
-                      turn === "white" ? "black" : "white"
+                      turn === "white" ? "black" : "white",
+                      enPassant[turn]
                     ) === true
                   : false,
               from: { y: oldPos.y, x: oldPos.x },
@@ -572,408 +617,790 @@ function Board(props) {
         console.log("inCheck?");
       }
     },
-    [board, turn, canCastle, enPassant, moveHistory]
+    [refs.current, board, turn, canCastle, enPassant, moveHistory]
   );
 
   const mapBoard = useCallback(
     (state, board) => {
-      // for(let i = 0; i < refs.length; i++)
-        // refs.current[i].classList.remove("active");
-
       if (state === "live")
-        return (
-          <tbody>
-            {board.map((row, y) => {
-              return (
-                <tr key={y}>
-                  {row.map((piece, x) => {
-                    switch (piece) {
-                      case 1:
-                        return (
-                          <King
-                            color="white"
-                            key={`k${y}-${x}`}
-                            position={{ x, y }}
-                            place={turn === "white" ? place : null}
-                            board={_.cloneDeep(board)}
-                            playing={props.playing}
-                            canCastle={canCastle.white}
-                            castles={turn === "white" ? castles : null}
-                            grabbing={grabbing}
-                          >
-                            <div
-                              className="dot"
-                              ref={(el) => refs.current[(y * 8) + x] = el}
-                            ></div>
-                          </King>
-                        );
-                      case 2:
-                        return (
-                          <Queen
-                            color="white"
-                            key={`q${y}-${x}`}
-                            position={{ x, y }}
-                            place={turn === "white" ? place : null}
-                            board={_.cloneDeep(board)}
-                            playing={props.playing}
-                            grabbing={grabbing}
-                          >
-                            <div
-                              className="dot"
-                              ref={(el) => refs.current[(y * 8) + x] = el}
-                            ></div>
-                          </Queen>
-                        );
-                      case 3:
-                        return (
-                          <Rook
-                            color="white"
-                            key={`r${y}-${x}`}
-                            position={{ x, y }}
-                            place={turn === "white" ? place : null}
-                            board={_.cloneDeep(board)}
-                            playing={props.playing}
-                            grabbing={grabbing}
-                          >
-                            <div
-                              className="dot"
-                              ref={(el) => refs.current[(y * 8) + x] = el}
-                            ></div>
-                          </Rook>
-                        );
-                      case 4:
-                        return (
-                          <Knight
-                            color="white"
-                            key={`n${y}-${x}`}
-                            position={{ x, y }}
-                            place={turn === "white" ? place : null}
-                            board={_.cloneDeep(board)}
-                            playing={props.playing}
-                            grabbing={grabbing}
-                          >
-                            <div
-                              className="dot"
-                              ref={(el) => refs.current[(y * 8) + x] = el}
-                            ></div>
-                          </Knight>
-                        );
-                      case 5:
-                        return (
-                          <Bishop
-                            color="white"
-                            key={`b${y}-${x}`}
-                            position={{ x, y }}
-                            place={turn === "white" ? place : null}
-                            board={_.cloneDeep(board)}
-                            playing={props.playing}
-                            grabbing={grabbing}
-                          >
-                            <div
-                              className="dot"
-                              ref={(el) => refs.current[(y * 8) + x] = el}
-                            ></div>
-                          </Bishop>
-                        );
-                      case 6:
-                        return (
-                          <Pawn
-                            color="white"
-                            key={`p${y}-${x}`}
-                            isFirst={y === 6 ? true : false}
-                            position={{ x, y }}
-                            place={turn === "white" ? place : null}
-                            board={_.cloneDeep(board)}
-                            playing={props.playing}
-                            enPassant={enPassant.white.pawns.find(
-                              (pawn) => pawn.x === x && pawn.y === y
-                            )}
-                            enPassantMove={
-                              enPassant.white.pawns.find(
-                                (pawn) => pawn.x === x && pawn.y === y
-                              )
-                                ? enPassantMove
-                                : null
-                            }
-                            grabbing={grabbing}
-                          >
-                            <div
-                              className="dot"
-                              ref={(el) => refs.current[(y * 8) + x] = el}
-                            ></div>
-                          </Pawn>
-                        );
-                      case 11:
-                        return (
-                          <King
-                            color="black"
-                            key={`k${y}-${x}`}
-                            position={{ x, y }}
-                            place={turn === "black" ? place : null}
-                            board={_.cloneDeep(board)}
-                            playing={props.playing}
-                            canCastle={canCastle.black}
-                            castles={turn === "black" ? castles : null}
-                            grabbing={grabbing}
-                          >
-                            <div
-                              className="dot"
-                              ref={(el) => refs.current[(y * 8) + x] = el}
-                            ></div>
-                          </King>
-                        );
-                      case 12:
-                        return (
-                          <Queen
-                            color="black"
-                            key={`q${y}-${x}`}
-                            position={{ x, y }}
-                            place={turn === "black" ? place : null}
-                            board={_.cloneDeep(board)}
-                            playing={props.playing}
-                            grabbing={grabbing}
-                          >
-                            <div
-                              className="dot"
-                              ref={(el) => refs.current[(y * 8) + x] = el}
-                            ></div>
-                          </Queen>
-                        );
-                      case 13:
-                        return (
-                          <Rook
-                            color="black"
-                            key={`r${y}-${x}`}
-                            position={{ x, y }}
-                            place={turn === "black" ? place : null}
-                            board={_.cloneDeep(board)}
-                            playing={props.playing}
-                            grabbing={grabbing}
-                          >
-                            <div
-                              className="dot"
-                              ref={(el) => refs.current[(y * 8) + x] = el}
-                            ></div>
-                          </Rook>
-                        );
-                      case 14:
-                        return (
-                          <Knight
-                            color="black"
-                            key={`n${y}-${x}`}
-                            position={{ x, y }}
-                            place={turn === "black" ? place : null}
-                            board={_.cloneDeep(board)}
-                            playing={props.playing}
-                            grabbing={grabbing}
-                          >
-                            <div
-                              className="dot"
-                              ref={(el) => refs.current[(y * 8) + x] = el}
-                            ></div>
-                          </Knight>
-                        );
-                      case 15:
-                        return (
-                          <Bishop
-                            color="black"
-                            key={`b${y}-${x}`}
-                            position={{ x, y }}
-                            place={turn === "black" ? place : null}
-                            board={_.cloneDeep(board)}
-                            playing={props.playing}
-                            grabbing={grabbing}
-                          >
-                            <div
-                              className="dot"
-                              ref={(el) => refs.current[(y * 8) + x] = el}
-                            ></div>
-                          </Bishop>
-                        );
-                      case 16:
-                        return (
-                          <Pawn
-                            color="black"
-                            key={`p${y}-${x}`}
-                            isFirst={y === 1 ? true : false}
-                            position={{ x, y }}
-                            place={turn === "black" ? place : null}
-                            board={_.cloneDeep(board)}
-                            playing={props.playing}
-                            enPassant={enPassant.black.pawns.find(
-                              (pawn) => pawn.x === x && pawn.y === y
-                            )}
-                            enPassantMove={
-                              enPassant.black.pawns.find(
-                                (pawn) => pawn.x === x && pawn.y === y
-                              )
-                                ? enPassantMove
-                                : null
-                            }
-                            grabbing={grabbing}
-                          >
-                            <div
-                              className="dot"
-                              ref={(el) => refs.current[(y * 8) + x] = el}
-                            ></div>
-                          </Pawn>
-                        );
-                      default:
-                        return (
-                          <td key={`e${y}-${x}`}>
-                            <div
-                              className="dot"
-                              ref={(el) => refs.current[(y * 8) + x] = el}
-                              // onClick={() => console.log(y * 7 + x)}
-                            ></div>
-                          </td>
-                        );
+        return board.map((row, y) => {
+          return row.map((piece, x) => {
+            switch (piece) {
+              case 1:
+                return (
+                  <King
+                    color="white"
+                    key={`k${y}-${x}`}
+                    position={{ x, y }}
+                    place={turn === "white" ? place : null}
+                    board={_.cloneDeep(board)}
+                    playing={props.playing}
+                    canCastle={canCastle.white}
+                    castles={turn === "white" ? castles : null}
+                    grabbing={grabbing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        moveHistory[moveHistory.length - 1]
+                          ? (moveHistory[moveHistory.length - 1].from.y === y &&
+                              moveHistory[moveHistory.length - 1].from.x ===
+                                x) ||
+                            (moveHistory[moveHistory.length - 1].to.y === y &&
+                              moveHistory[moveHistory.length - 1].to.x === x)
+                            ? "lastMove"
+                            : ""
+                          : ""
+                      )}
+                      ref={(el) => (refs.current[y * 8 + x] = el)}
+                    >
+                      <div className="dot"></div>
+                    </div>
+                  </King>
+                );
+              case 2:
+                return (
+                  <Queen
+                    color="white"
+                    key={`q${y}-${x}`}
+                    position={{ x, y }}
+                    place={turn === "white" ? place : null}
+                    board={_.cloneDeep(board)}
+                    playing={props.playing}
+                    grabbing={grabbing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        moveHistory[moveHistory.length - 1]
+                          ? (moveHistory[moveHistory.length - 1].from.y === y &&
+                              moveHistory[moveHistory.length - 1].from.x ===
+                                x) ||
+                            (moveHistory[moveHistory.length - 1].to.y === y &&
+                              moveHistory[moveHistory.length - 1].to.x === x)
+                            ? "lastMove"
+                            : ""
+                          : ""
+                      )}
+                      ref={(el) => (refs.current[y * 8 + x] = el)}
+                    >
+                      <div className="dot"></div>
+                    </div>
+                  </Queen>
+                );
+              case 3:
+                return (
+                  <Rook
+                    color="white"
+                    key={`r${y}-${x}`}
+                    position={{ x, y }}
+                    place={turn === "white" ? place : null}
+                    board={_.cloneDeep(board)}
+                    playing={props.playing}
+                    grabbing={grabbing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        moveHistory[moveHistory.length - 1]
+                          ? (moveHistory[moveHistory.length - 1].from.y === y &&
+                              moveHistory[moveHistory.length - 1].from.x ===
+                                x) ||
+                            (moveHistory[moveHistory.length - 1].to.y === y &&
+                              moveHistory[moveHistory.length - 1].to.x === x)
+                            ? "lastMove"
+                            : ""
+                          : ""
+                      )}
+                      ref={(el) => (refs.current[y * 8 + x] = el)}
+                    >
+                      <div className="dot"></div>
+                    </div>
+                  </Rook>
+                );
+              case 4:
+                return (
+                  <Knight
+                    color="white"
+                    key={`n${y}-${x}`}
+                    position={{ x, y }}
+                    place={turn === "white" ? place : null}
+                    board={_.cloneDeep(board)}
+                    playing={props.playing}
+                    grabbing={grabbing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        moveHistory[moveHistory.length - 1]
+                          ? (moveHistory[moveHistory.length - 1].from.y === y &&
+                              moveHistory[moveHistory.length - 1].from.x ===
+                                x) ||
+                            (moveHistory[moveHistory.length - 1].to.y === y &&
+                              moveHistory[moveHistory.length - 1].to.x === x)
+                            ? "lastMove"
+                            : ""
+                          : ""
+                      )}
+                      ref={(el) => (refs.current[y * 8 + x] = el)}
+                    >
+                      <div className="dot"></div>
+                    </div>
+                  </Knight>
+                );
+              case 5:
+                return (
+                  <Bishop
+                    color="white"
+                    key={`b${y}-${x}`}
+                    position={{ x, y }}
+                    place={turn === "white" ? place : null}
+                    board={_.cloneDeep(board)}
+                    playing={props.playing}
+                    grabbing={grabbing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        moveHistory[moveHistory.length - 1]
+                          ? (moveHistory[moveHistory.length - 1].from.y === y &&
+                              moveHistory[moveHistory.length - 1].from.x ===
+                                x) ||
+                            (moveHistory[moveHistory.length - 1].to.y === y &&
+                              moveHistory[moveHistory.length - 1].to.x === x)
+                            ? "lastMove"
+                            : ""
+                          : ""
+                      )}
+                      ref={(el) => (refs.current[y * 8 + x] = el)}
+                    >
+                      <div className="dot"></div>
+                    </div>
+                  </Bishop>
+                );
+              case 6:
+                return (
+                  <Pawn
+                    color="white"
+                    key={`p${y}-${x}`}
+                    isFirst={y === 6 ? true : false}
+                    position={{ x, y }}
+                    place={turn === "white" ? place : null}
+                    board={_.cloneDeep(board)}
+                    playing={props.playing}
+                    enPassant={enPassant.white.pawns.find(
+                      (pawn) => pawn.x === x && pawn.y === y
+                    )}
+                    enPassantMove={
+                      enPassant.white.pawns.find(
+                        (pawn) => pawn.x === x && pawn.y === y
+                      )
+                        ? enPassantMove
+                        : null
                     }
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        );
+                    grabbing={grabbing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        moveHistory[moveHistory.length - 1]
+                          ? (moveHistory[moveHistory.length - 1].from.y === y &&
+                              moveHistory[moveHistory.length - 1].from.x ===
+                                x) ||
+                            (moveHistory[moveHistory.length - 1].to.y === y &&
+                              moveHistory[moveHistory.length - 1].to.x === x)
+                            ? "lastMove"
+                            : ""
+                          : ""
+                      )}
+                      ref={(el) => (refs.current[y * 8 + x] = el)}
+                    >
+                      <div className="dot"></div>
+                    </div>
+                  </Pawn>
+                );
+              case 11:
+                return (
+                  <King
+                    color="black"
+                    key={`k${y}-${x}`}
+                    position={{ x, y }}
+                    place={turn === "black" ? place : null}
+                    board={_.cloneDeep(board)}
+                    playing={props.playing}
+                    canCastle={canCastle.black}
+                    castles={turn === "black" ? castles : null}
+                    grabbing={grabbing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        moveHistory[moveHistory.length - 1]
+                          ? (moveHistory[moveHistory.length - 1].from.y === y &&
+                              moveHistory[moveHistory.length - 1].from.x ===
+                                x) ||
+                            (moveHistory[moveHistory.length - 1].to.y === y &&
+                              moveHistory[moveHistory.length - 1].to.x === x)
+                            ? "lastMove"
+                            : ""
+                          : ""
+                      )}
+                      ref={(el) => (refs.current[y * 8 + x] = el)}
+                    >
+                      <div className="dot"></div>
+                    </div>
+                  </King>
+                );
+              case 12:
+                return (
+                  <Queen
+                    color="black"
+                    key={`q${y}-${x}`}
+                    position={{ x, y }}
+                    place={turn === "black" ? place : null}
+                    board={_.cloneDeep(board)}
+                    playing={props.playing}
+                    grabbing={grabbing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        moveHistory[moveHistory.length - 1]
+                          ? (moveHistory[moveHistory.length - 1].from.y === y &&
+                              moveHistory[moveHistory.length - 1].from.x ===
+                                x) ||
+                            (moveHistory[moveHistory.length - 1].to.y === y &&
+                              moveHistory[moveHistory.length - 1].to.x === x)
+                            ? "lastMove"
+                            : ""
+                          : ""
+                      )}
+                      ref={(el) => (refs.current[y * 8 + x] = el)}
+                    >
+                      <div className="dot"></div>
+                    </div>
+                  </Queen>
+                );
+              case 13:
+                return (
+                  <Rook
+                    color="black"
+                    key={`r${y}-${x}`}
+                    position={{ x, y }}
+                    place={turn === "black" ? place : null}
+                    board={_.cloneDeep(board)}
+                    playing={props.playing}
+                    grabbing={grabbing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        moveHistory[moveHistory.length - 1]
+                          ? (moveHistory[moveHistory.length - 1].from.y === y &&
+                              moveHistory[moveHistory.length - 1].from.x ===
+                                x) ||
+                            (moveHistory[moveHistory.length - 1].to.y === y &&
+                              moveHistory[moveHistory.length - 1].to.x === x)
+                            ? "lastMove"
+                            : ""
+                          : ""
+                      )}
+                      ref={(el) => (refs.current[y * 8 + x] = el)}
+                    >
+                      <div className="dot"></div>
+                    </div>
+                  </Rook>
+                );
+              case 14:
+                return (
+                  <Knight
+                    color="black"
+                    key={`n${y}-${x}`}
+                    position={{ x, y }}
+                    place={turn === "black" ? place : null}
+                    board={_.cloneDeep(board)}
+                    playing={props.playing}
+                    grabbing={grabbing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        moveHistory[moveHistory.length - 1]
+                          ? (moveHistory[moveHistory.length - 1].from.y === y &&
+                              moveHistory[moveHistory.length - 1].from.x ===
+                                x) ||
+                            (moveHistory[moveHistory.length - 1].to.y === y &&
+                              moveHistory[moveHistory.length - 1].to.x === x)
+                            ? "lastMove"
+                            : ""
+                          : ""
+                      )}
+                      ref={(el) => (refs.current[y * 8 + x] = el)}
+                    >
+                      <div className="dot"></div>
+                    </div>
+                  </Knight>
+                );
+              case 15:
+                return (
+                  <Bishop
+                    color="black"
+                    key={`b${y}-${x}`}
+                    position={{ x, y }}
+                    place={turn === "black" ? place : null}
+                    board={_.cloneDeep(board)}
+                    playing={props.playing}
+                    grabbing={grabbing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        moveHistory[moveHistory.length - 1]
+                          ? (moveHistory[moveHistory.length - 1].from.y === y &&
+                              moveHistory[moveHistory.length - 1].from.x ===
+                                x) ||
+                            (moveHistory[moveHistory.length - 1].to.y === y &&
+                              moveHistory[moveHistory.length - 1].to.x === x)
+                            ? "lastMove"
+                            : ""
+                          : ""
+                      )}
+                      ref={(el) => (refs.current[y * 8 + x] = el)}
+                    >
+                      <div className="dot"></div>
+                    </div>
+                  </Bishop>
+                );
+              case 16:
+                return (
+                  <Pawn
+                    color="black"
+                    key={`p${y}-${x}`}
+                    isFirst={y === 1 ? true : false}
+                    position={{ x, y }}
+                    place={turn === "black" ? place : null}
+                    board={_.cloneDeep(board)}
+                    playing={props.playing}
+                    enPassant={enPassant.black.pawns.find(
+                      (pawn) => pawn.x === x && pawn.y === y
+                    )}
+                    enPassantMove={
+                      enPassant.black.pawns.find(
+                        (pawn) => pawn.x === x && pawn.y === y
+                      )
+                        ? enPassantMove
+                        : null
+                    }
+                    grabbing={grabbing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        moveHistory[moveHistory.length - 1]
+                          ? (moveHistory[moveHistory.length - 1].from.y === y &&
+                              moveHistory[moveHistory.length - 1].from.x ===
+                                x) ||
+                            (moveHistory[moveHistory.length - 1].to.y === y &&
+                              moveHistory[moveHistory.length - 1].to.x === x)
+                            ? "lastMove"
+                            : ""
+                          : ""
+                      )}
+                      ref={(el) => (refs.current[y * 8 + x] = el)}
+                    >
+                      <div className="dot"></div>
+                    </div>
+                  </Pawn>
+                );
+              default:
+                return (
+                  <div key={`e${y}-${x}`}>
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        moveHistory[moveHistory.length - 1]
+                          ? (moveHistory[moveHistory.length - 1].from.y === y &&
+                              moveHistory[moveHistory.length - 1].from.x ===
+                                x) ||
+                            (moveHistory[moveHistory.length - 1].to.y === y &&
+                              moveHistory[moveHistory.length - 1].to.x === x)
+                            ? "lastMove"
+                            : ""
+                          : ""
+                      )}
+                      ref={(el) => (refs.current[y * 8 + x] = el)}
+                    >
+                      <div className="dot"></div>
+                    </div>
+                  </div>
+                );
+            }
+          });
+        });
       else
-        return (
-          <tbody>
-            {board.map((row, y) => {
-              return (
-                <tr key={"rowHistory" + y}>
-                  {row.map((piece, x) => {
-                    switch (piece) {
-                      case 1:
-                        return (
-                          <King
-                            color="white"
-                            key={`kh${y}-${x}`}
-                            position={{ x, y }}
-                            history={true}
-                            playing={props.playing}
-                          />
-                        );
-                      case 2:
-                        return (
-                          <Queen
-                            color="white"
-                            key={`qh${y}-${x}`}
-                            position={{ x, y }}
-                            history={true}
-                            playing={props.playing}
-                          />
-                        );
-                      case 3:
-                        return (
-                          <Rook
-                            color="white"
-                            key={`rh${y}-${x}`}
-                            position={{ x, y }}
-                            history={true}
-                            playing={props.playing}
-                          />
-                        );
-                      case 4:
-                        return (
-                          <Knight
-                            color="white"
-                            key={`nh${y}-${x}`}
-                            position={{ x, y }}
-                            history={true}
-                            playing={props.playing}
-                          />
-                        );
-                      case 5:
-                        return (
-                          <Bishop
-                            color="white"
-                            key={`bh${y}-${x}`}
-                            position={{ x, y }}
-                            history={true}
-                            playing={props.playing}
-                          />
-                        );
-                      case 6:
-                        return (
-                          <Pawn
-                            color="white"
-                            key={`ph${y}-${x}`}
-                            position={{ x, y }}
-                            history={true}
-                            playing={props.playing}
-                          />
-                        );
-                      case 11:
-                        return (
-                          <King
-                            color="black"
-                            key={`kh${y}-${x}`}
-                            position={{ x, y }}
-                            history={true}
-                            playing={props.playing}
-                          />
-                        );
-                      case 12:
-                        return (
-                          <Queen
-                            color="black"
-                            key={`qh${y}-${x}`}
-                            position={{ x, y }}
-                            history={true}
-                            playing={props.playing}
-                          />
-                        );
-                      case 13:
-                        return (
-                          <Rook
-                            color="black"
-                            key={`rh${y}-${x}`}
-                            position={{ x, y }}
-                            history={true}
-                            playing={props.playing}
-                          />
-                        );
-                      case 14:
-                        return (
-                          <Knight
-                            color="black"
-                            key={`nh${y}-${x}`}
-                            position={{ x, y }}
-                            history={true}
-                            playing={props.playing}
-                          />
-                        );
-                      case 15:
-                        return (
-                          <Bishop
-                            color="black"
-                            key={`bh${y}-${x}`}
-                            position={{ x, y }}
-                            history={true}
-                            playing={props.playing}
-                          />
-                        );
-                      case 16:
-                        return (
-                          <Pawn
-                            color="black"
-                            key={`ph${y}-${x}`}
-                            position={{ x, y }}
-                            history={true}
-                            playing={props.playing}
-                          />
-                        );
-                      default:
-                        return <td key={`eh${y}-${x}`} />;
-                    }
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        );
+        return board.map((row, y) => {
+          return row.map((piece, x) => {
+            switch (piece) {
+              case 1:
+                return (
+                  <King
+                    color="white"
+                    key={`kh${y}-${x}`}
+                    position={{ x, y }}
+                    history={true}
+                    playing={props.playing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        boardHistoryLive.index - 1 >= 0 &&
+                          ((moveHistory[boardHistoryLive.index - 1].from.x ===
+                            x &&
+                            moveHistory[boardHistoryLive.index - 1].from.y ===
+                              y) ||
+                            (moveHistory[boardHistoryLive.index - 1].to.x ===
+                              x &&
+                              moveHistory[boardHistoryLive.index - 1].to.y ===
+                                y))
+                          ? "lastMove"
+                          : ""
+                      )}
+                    ></div>
+                  </King>
+                );
+              case 2:
+                return (
+                  <Queen
+                    color="white"
+                    key={`qh${y}-${x}`}
+                    position={{ x, y }}
+                    history={true}
+                    playing={props.playing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        boardHistoryLive.index - 1 >= 0 &&
+                          ((moveHistory[boardHistoryLive.index - 1].from.x ===
+                            x &&
+                            moveHistory[boardHistoryLive.index - 1].from.y ===
+                              y) ||
+                            (moveHistory[boardHistoryLive.index - 1].to.x ===
+                              x &&
+                              moveHistory[boardHistoryLive.index - 1].to.y ===
+                                y))
+                          ? "lastMove"
+                          : ""
+                      )}
+                    ></div>
+                  </Queen>
+                );
+              case 3:
+                return (
+                  <Rook
+                    color="white"
+                    key={`rh${y}-${x}`}
+                    position={{ x, y }}
+                    history={true}
+                    playing={props.playing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        boardHistoryLive.index - 1 >= 0 &&
+                          ((moveHistory[boardHistoryLive.index - 1].from.x ===
+                            x &&
+                            moveHistory[boardHistoryLive.index - 1].from.y ===
+                              y) ||
+                            (moveHistory[boardHistoryLive.index - 1].to.x ===
+                              x &&
+                              moveHistory[boardHistoryLive.index - 1].to.y ===
+                                y))
+                          ? "lastMove"
+                          : ""
+                      )}
+                    ></div>
+                  </Rook>
+                );
+              case 4:
+                return (
+                  <Knight
+                    color="white"
+                    key={`nh${y}-${x}`}
+                    position={{ x, y }}
+                    history={true}
+                    playing={props.playing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        boardHistoryLive.index - 1 >= 0 &&
+                          ((moveHistory[boardHistoryLive.index - 1].from.x ===
+                            x &&
+                            moveHistory[boardHistoryLive.index - 1].from.y ===
+                              y) ||
+                            (moveHistory[boardHistoryLive.index - 1].to.x ===
+                              x &&
+                              moveHistory[boardHistoryLive.index - 1].to.y ===
+                                y))
+                          ? "lastMove"
+                          : ""
+                      )}
+                    ></div>
+                  </Knight>
+                );
+              case 5:
+                return (
+                  <Bishop
+                    color="white"
+                    key={`bh${y}-${x}`}
+                    position={{ x, y }}
+                    history={true}
+                    playing={props.playing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        boardHistoryLive.index - 1 >= 0 &&
+                          ((moveHistory[boardHistoryLive.index - 1].from.x ===
+                            x &&
+                            moveHistory[boardHistoryLive.index - 1].from.y ===
+                              y) ||
+                            (moveHistory[boardHistoryLive.index - 1].to.x ===
+                              x &&
+                              moveHistory[boardHistoryLive.index - 1].to.y ===
+                                y))
+                          ? "lastMove"
+                          : ""
+                      )}
+                    ></div>
+                  </Bishop>
+                );
+              case 6:
+                return (
+                  <Pawn
+                    color="white"
+                    key={`ph${y}-${x}`}
+                    position={{ x, y }}
+                    history={true}
+                    playing={props.playing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        boardHistoryLive.index - 1 >= 0 &&
+                          ((moveHistory[boardHistoryLive.index - 1].from.x ===
+                            x &&
+                            moveHistory[boardHistoryLive.index - 1].from.y ===
+                              y) ||
+                            (moveHistory[boardHistoryLive.index - 1].to.x ===
+                              x &&
+                              moveHistory[boardHistoryLive.index - 1].to.y ===
+                                y))
+                          ? "lastMove"
+                          : ""
+                      )}
+                    ></div>
+                  </Pawn>
+                );
+              case 11:
+                return (
+                  <King
+                    color="black"
+                    key={`kh${y}-${x}`}
+                    position={{ x, y }}
+                    history={true}
+                    playing={props.playing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        boardHistoryLive.index - 1 >= 0 &&
+                          ((moveHistory[boardHistoryLive.index - 1].from.x ===
+                            x &&
+                            moveHistory[boardHistoryLive.index - 1].from.y ===
+                              y) ||
+                            (moveHistory[boardHistoryLive.index - 1].to.x ===
+                              x &&
+                              moveHistory[boardHistoryLive.index - 1].to.y ===
+                                y))
+                          ? "lastMove"
+                          : ""
+                      )}
+                    ></div>
+                  </King>
+                );
+              case 12:
+                return (
+                  <Queen
+                    color="black"
+                    key={`qh${y}-${x}`}
+                    position={{ x, y }}
+                    history={true}
+                    playing={props.playing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        boardHistoryLive.index - 1 >= 0 &&
+                          ((moveHistory[boardHistoryLive.index - 1].from.x ===
+                            x &&
+                            moveHistory[boardHistoryLive.index - 1].from.y ===
+                              y) ||
+                            (moveHistory[boardHistoryLive.index - 1].to.x ===
+                              x &&
+                              moveHistory[boardHistoryLive.index - 1].to.y ===
+                                y))
+                          ? "lastMove"
+                          : ""
+                      )}
+                    ></div>
+                  </Queen>
+                );
+              case 13:
+                return (
+                  <Rook
+                    color="black"
+                    key={`rh${y}-${x}`}
+                    position={{ x, y }}
+                    history={true}
+                    playing={props.playing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        boardHistoryLive.index - 1 >= 0 &&
+                          ((moveHistory[boardHistoryLive.index - 1].from.x ===
+                            x &&
+                            moveHistory[boardHistoryLive.index - 1].from.y ===
+                              y) ||
+                            (moveHistory[boardHistoryLive.index - 1].to.x ===
+                              x &&
+                              moveHistory[boardHistoryLive.index - 1].to.y ===
+                                y))
+                          ? "lastMove"
+                          : ""
+                      )}
+                    ></div>
+                  </Rook>
+                );
+              case 14:
+                return (
+                  <Knight
+                    color="black"
+                    key={`nh${y}-${x}`}
+                    position={{ x, y }}
+                    history={true}
+                    playing={props.playing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        boardHistoryLive.index - 1 >= 0 &&
+                          ((moveHistory[boardHistoryLive.index - 1].from.x ===
+                            x &&
+                            moveHistory[boardHistoryLive.index - 1].from.y ===
+                              y) ||
+                            (moveHistory[boardHistoryLive.index - 1].to.x ===
+                              x &&
+                              moveHistory[boardHistoryLive.index - 1].to.y ===
+                                y))
+                          ? "lastMove"
+                          : ""
+                      )}
+                    ></div>
+                  </Knight>
+                );
+              case 15:
+                return (
+                  <Bishop
+                    color="black"
+                    key={`bh${y}-${x}`}
+                    position={{ x, y }}
+                    history={true}
+                    playing={props.playing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        boardHistoryLive.index - 1 >= 0 &&
+                          ((moveHistory[boardHistoryLive.index - 1].from.x ===
+                            x &&
+                            moveHistory[boardHistoryLive.index - 1].from.y ===
+                              y) ||
+                            (moveHistory[boardHistoryLive.index - 1].to.x ===
+                              x &&
+                              moveHistory[boardHistoryLive.index - 1].to.y ===
+                                y))
+                          ? "lastMove"
+                          : ""
+                      )}
+                    ></div>
+                  </Bishop>
+                );
+              case 16:
+                return (
+                  <Pawn
+                    color="black"
+                    key={`ph${y}-${x}`}
+                    position={{ x, y }}
+                    history={true}
+                    playing={props.playing}
+                  >
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        boardHistoryLive.index - 1 >= 0 &&
+                          ((moveHistory[boardHistoryLive.index - 1].from.x ===
+                            x &&
+                            moveHistory[boardHistoryLive.index - 1].from.y ===
+                              y) ||
+                            (moveHistory[boardHistoryLive.index - 1].to.x ===
+                              x &&
+                              moveHistory[boardHistoryLive.index - 1].to.y ===
+                                y))
+                          ? "lastMove"
+                          : ""
+                      )}
+                    ></div>
+                  </Pawn>
+                );
+              default:
+                return (
+                  <div key={`eh${y}-${x}`}>
+                    <div
+                      className={classnames(
+                        "squareBackground",
+                        boardHistoryLive.index - 1 >= 0 &&
+                          ((moveHistory[boardHistoryLive.index - 1].from.x ===
+                            x &&
+                            moveHistory[boardHistoryLive.index - 1].from.y ===
+                              y) ||
+                            (moveHistory[boardHistoryLive.index - 1].to.x ===
+                              x &&
+                              moveHistory[boardHistoryLive.index - 1].to.y ===
+                                y))
+                          ? "lastMove"
+                          : ""
+                      )}
+                    ></div>
+                  </div>
+                );
+            }
+          });
+        });
     },
-    [canCastle, enPassant, props.playing, turn, place, enPassantMove, castles, refs]
+    [
+      canCastle,
+      enPassant,
+      props.playing,
+      turn,
+      place,
+      enPassantMove,
+      castles,
+      refs,
+      boardHistoryLive.index,
+    ]
   );
 
   const promoteWrapper = () => {
@@ -986,11 +1413,11 @@ function Board(props) {
         style={{
           transform: `translate(${
             props.playing === "black"
-              ? tableWidth -
-                tableWidth / 8 -
-                promote.newPos.x * (tableWidth / 8) +
+              ? boardSize.width -
+                boardSize.width / 8 -
+                promote.newPos.x * (boardSize.width / 8) +
                 tableRef.current.offsetLeft
-              : promote.newPos.x * (tableWidth / 8) +
+              : promote.newPos.x * (boardSize.width / 8) +
                 tableRef.current.offsetLeft
           }px, 0px)`,
         }}
@@ -1044,60 +1471,115 @@ function Board(props) {
   };
 
   useEffect(() => {
-    if (checkIfKingIsInCheck(_.cloneDeep(board), turn)) {
+    if (boardHistoryLive.state === null) {
+      if (moveHistory[moveHistory.length - 2] && refs.current[0]) {
+        refs.current[
+          moveHistory[moveHistory.length - 2].from.y * 8 +
+            moveHistory[moveHistory.length - 2].from.x
+        ].classList.remove("lastMove");
+        refs.current[
+          moveHistory[moveHistory.length - 2].to.y * 8 +
+            moveHistory[moveHistory.length - 2].to.x
+        ].classList.remove("lastMove");
+      }
+      if (moveHistory[moveHistory.length - 1] && refs.current[0]) {
+        refs.current[
+          moveHistory[moveHistory.length - 1].from.y * 8 +
+            moveHistory[moveHistory.length - 1].from.x
+        ].classList.add("lastMove");
+        refs.current[
+          moveHistory[moveHistory.length - 1].to.y * 8 +
+            moveHistory[moveHistory.length - 1].to.x
+        ].classList.add("lastMove");
+      }
+    }
+  }, [tableBoard, moveHistory.length, boardHistoryLive.state]);
+
+  useEffect(() => {
+    if (isDraw(_.cloneDeep(board), _.cloneDeep(boardHistory), turn)) {
+      console.log("DRAW");
+    } else if (checkIfKingIsInCheck(_.cloneDeep(board), turn)) {
       console.log("check");
-      if (isCheckmate(_.cloneDeep(board), turn) === true) {
+      if (
+        isCheckmateOrStalemate(_.cloneDeep(board), turn, enPassant[turn]) ===
+        true
+      ) {
         console.log(turn + " is checkmated");
         console.log(boardHistory);
       }
     } else if (
-      checkIfStalemate(_.cloneDeep(board), turn, enPassant[turn]) === true
+      isCheckmateOrStalemate(_.cloneDeep(board), turn, enPassant[turn]) === true
     ) {
       console.log("Stalemate");
-    } else if (isDraw(_.cloneDeep(board), _.cloneDeep(boardHistory), turn)) {
-      console.log("DRAW");
     }
 
-    for(let i = 0; i < 64; i++) {
-      if(refs.current[i])
-      refs.current[i].classList.remove('active');
+    for (let i = 0; i < 64; i++) {
+      if (refs.current[i]) refs.current[i].classList.remove("active", "take");
     }
+
+    moveSound.play();
 
     setTableBoard(
-      boardHistoryLive !== null
-        ? mapBoard("history", boardHistoryLive)
+      boardHistoryLive.state !== null
+        ? mapBoard("history", boardHistoryLive.state)
         : mapBoard("live", board)
     );
 
     if (
-      boardHistoryLive === null &&
+      boardHistoryLive.state === null &&
       JSON.stringify(boardHistory[boardHistory.length - 1]) !==
         JSON.stringify(board)
     )
       setBoardHistory([...boardHistory, board]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(boardHistoryLive), JSON.stringify(board)]);
+  }, [JSON.stringify(boardHistoryLive.state), JSON.stringify(board)]);
 
-  const grabbing = (state, squares) => {
-    if (state === true) {
-      squares.map((square) => {
-        if(refs.current[square.y * 8 + square.x])
-        refs.current[square.y * 8 + square.x].classList.add('active');
-      });
-    } else {
-      squares.map((square) => {
-        if(refs.current[square.y * 8 + square.x])
-        refs.current[square.y * 8 + square.x].classList.remove('active');
-      });
-    }
-  };
+  const grabbing = useCallback(
+    (state, squares, pos, currPos, color) => {
+      if (state === true) {
+        refs.current[currPos.y * 8 + currPos.x].classList.add("lastMove");
+        if (isDown.pos !== pos) setIsDown({ state: true, pos });
+        squares.map((square) => {
+          if (refs.current[square.y * 8 + square.x]) {
+            if (
+              (board[square.y][square.x] > 10 && turn === "white") ||
+              (board[square.y][square.x] < 10 &&
+                board[square.y][square.x] !== 0 &&
+                turn === "black")
+            ) {
+              refs.current[square.y * 8 + square.x].classList.add(
+                "active",
+                "take"
+              );
+            } else if (color === turn)
+              refs.current[square.y * 8 + square.x].classList.add("active");
+          }
+        });
+      } else {
+        if (!moveHistory[moveHistory.length - 1])
+          refs.current[currPos.y * 8 + currPos.x].classList.remove("lastMove");
+        else if (
+          currPos.y !== moveHistory[moveHistory.length - 1].to.y ||
+          currPos.x !== moveHistory[moveHistory.length - 1].to.x
+        )
+          refs.current[currPos.y * 8 + currPos.x].classList.remove("lastMove");
+        squares.map((square) => {
+          if (refs.current[square.y * 8 + square.x])
+            refs.current[square.y * 8 + square.x].classList.remove(
+              "active",
+              "take"
+            );
+        });
+        setIsDown({ state: false, pos: { x: 0, y: 0 } });
+      }
+    },
+    [refs.current, JSON.stringify(board), turn, isDown, moveHistory.length]
+  );
 
   return (
     <div className="chessboardWrapper">
       <div className="chessboard">
-        {promote.state === true
-          ? promoteWrapper()
-          : null}
+        {promote.state === true ? promoteWrapper() : null}
         {getNotation()}
         <div
           className={classnames(
@@ -1109,15 +1591,34 @@ function Board(props) {
             ? getCaptures(captures.black, captures.white)
             : getCaptures(captures.white, captures.black)}
         </div>
-        <table
+
+        <div
           ref={tableRef}
+          style={{
+            height: boardSize.height + "px",
+            width: boardSize.width + "px",
+            fontSize: Math.round(0.825 * (boardSize.width / 8)),
+          }}
           className={classnames(
             "mainBoard",
             props.playing === "black" ? "black" : ""
           )}
         >
+          <div
+            className="hoverSquare"
+            style={
+              isDown.state === true
+                ? {
+                    zIndex: 10,
+                    transform: `translate(${
+                      isDown.pos.x * (boardSize.width / 8)
+                    }px, ${isDown.pos.y * (boardSize.width / 8)}px)`,
+                  }
+                : { display: "none" }
+            }
+          ></div>
           {tableBoard}
-        </table>
+        </div>
 
         <div
           className={classnames(

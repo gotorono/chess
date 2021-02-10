@@ -1,31 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200;0,300;0,400;0,600;0,700;1,200;1,300&display=swap');
 
-table.mainBoard {
+.mainBoard {
     position: relative;
-    border-spacing: 0;
     overflow: visible;
-    height: 100%;
+    display: flex;
+    flex-wrap: wrap;
 }
 
-table.mainBoard.black {
+.mainBoard.black {
     transform: rotate(180deg);
-}
-
-table.mainBoard.black tr td {
-    overflow: visible;
-}
-
-table.mainBoard tr {
-    display:flex;
-    overflow: visible;
 }
 
 .chessboard {
     font-family: 'chessfont';
     float: left;
-    margin-left: 267px;
+    /* margin-left: 267px; */
     position: relative;
-    margin-top: 50px;
+    /* margin-top: 50px; */
 }
 
 .captures .pieceScore {
@@ -73,8 +64,28 @@ table.mainBoard tr {
     opacity: 0;
 }
 
-.dot.active {
-    opacity: .2;
+.squareBackground {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+}
+
+.squareBackground.lastMove {
+    background-color: rgba(45, 111, 187, 0.25);
+}
+
+.squareBackground.active .dot {
+    opacity: .125;
+}
+
+.squareBackground.take .dot {
+    width: 82.5%;
+    height: 82.5%;
+    background-color: transparent;
+    border: .9vh solid black;
 }
 
 .moveHistory {
@@ -82,18 +93,19 @@ table.mainBoard tr {
     float:left;
     margin-left: 25px;
     width: 420px;
-    display:flex;
+    height: 400px;
     background-color: whitesmoke;
     padding: 20px;
     margin-top:50px;
     border-radius: 4px;
-    flex-flow: row wrap;
     box-shadow: 0 0 4px rgba(0, 0, 0, 0.125);
 }
 
 .move {
+    float:left;
     display: flex;
-    flex-basis: 33%;
+    margin: 0 10px;
+    height: 30px;
 }
 
 .move > div {
@@ -122,7 +134,7 @@ table.mainBoard tr {
 }
 
 .move .moveNumber {
-    width: 25px;
+    margin-right: 10px;
     font-size: .65em;
     display:flex;
     align-items: center;
@@ -136,8 +148,8 @@ table.mainBoard tr {
 .promoteWrapper > div {
     outline: black;
     cursor: pointer;
-    width: 10vh;
-    height: 10vh;
+    width: 12.5%;
+    height: 12.5%;
     font-size: 8.5vh;
     display: flex;
     justify-content: center;
@@ -151,29 +163,49 @@ table.mainBoard tr {
     z-index: 1;
     user-select: none;
     font-family: 'Nunito';
-    font-size: 1.75vh;
     font-weight: bold;
     opacity: .325;
 }
 
-table.mainBoard.black .promoteWrapper > div {
+.mainBoard.black .promoteWrapper > div {
     color: black;
 }
 
-table.mainBoard tr td {
+.hoverSquare {
+    margin-left: 0px;
+    margin-top: 0px;
+    height: calc(12.5% - 8px);
+    width: calc(12.5% - 8px);
+   border: 4px solid rgba(255, 255, 255, 0.925);
+   background-color: transparent;
+    position: absolute;
+}
+
+.mainBoard > div:not(.hoverSquare) {
     position: relative;
-    height: 10vh;
-    width: 10vh;
+    height: 12.5%;
+    width: 12.5%;
     display: flex;
     justify-content: center;
     align-items: center;
     background-color: lightgray;
+    box-shadow: 0 0 16px rgba(0, 0, 0, 0.125) inset;
     user-select: none;
     padding: 0;
-    font-size: 8.5vh;
 }
 
-table.mainBoard tr:nth-child(1n) td:nth-child(2n) {
+.mainBoard > div:nth-child(n+2):nth-child(odd):nth-child(-n+9),
+.mainBoard  > div:nth-child(n+10):nth-child(even):nth-child(-n+17),
+.mainBoard  > div:nth-child(n+18):nth-child(odd):nth-child(-n+25),
+.mainBoard  > div:nth-child(n+26):nth-child(even):nth-child(-n+33),
+.mainBoard  > div:nth-child(n+34):nth-child(odd):nth-child(-n+41),
+.mainBoard > div:nth-child(n+42):nth-child(even):nth-child(-n+49),
+.mainBoard  > div:nth-child(n+50):nth-child(odd):nth-child(-n+57),
+.mainBoard  > div:nth-child(n+58):nth-child(even):nth-child(-n+65) {
+  background-color: darkgray;
+}
+
+/* table.mainBoard tr:nth-child(1n) td:nth-child(2n) {
     background-color: darkgray;
 }
 
@@ -183,7 +215,7 @@ table.mainBoard tr:nth-child(2n) td:nth-child(2n - 1) {
 
 table.mainBoard tr:nth-child(2n) td:nth-child(2n) {
     background-color: lightgray;
-}
+} */
 
 .piece {
     overflow: visible;

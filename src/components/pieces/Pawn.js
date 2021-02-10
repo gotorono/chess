@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import useMousePosition from "./useMousePosition";
 
-import { pawnCheck } from "./validatePlacement";
+import { availablePawnSquares } from "./validatePlacement";
 
 import { newX, newY, translateX, translateY } from "./positionPlacement";
 
@@ -9,10 +9,45 @@ import classnames from "classnames";
 
 function Pawn(props) {
   const [isDown, setIsDown] = useState(false);
+  const [available, setAvailable] = useState([]);
 
   const pieceRef = React.useRef();
 
   const { x, y } = useMousePosition(isDown);
+
+  useEffect(() => {
+    if (props.board)
+      setAvailable(
+        availablePawnSquares(
+          props.board,
+          props.position,
+          props.color,
+          props.enPassant,
+          props.isFirst
+        )
+      );
+  }, [props.board]);
+
+  useEffect(() => {
+    if(isDown === false)
+      if(props.grabbing)
+        props.grabbing(false, available, null, props.position);
+  }, [isDown]);
+
+  useEffect(() => {
+    if (isDown === true) {
+      props.grabbing(
+        isDown,
+        available,
+        {
+          x: newX(x, pieceRef, props.playing),
+          y: newY(y, pieceRef, props.playing),
+        },
+        props.position,
+        props.color
+      );
+    }
+  }, [isDown, pieceRef, available, x, y]);
 
   const mouseUpHandler = useCallback(
     (e) => {
@@ -21,38 +56,24 @@ function Pawn(props) {
           let posX = newX(x, pieceRef, props.playing);
           let posY = newY(y, pieceRef, props.playing);
 
-          // console.log(posX, posY); 
-          if (
-            pawnCheck(
-              props.board,
-              props.position,
-              { x: posX, y: posY },
-              props.isFirst,
-              props.color,
-              props.enPassant
-            ) === true
-          ) {
-            if (props.place)
+          if (available.find((pos) => pos.x === posX && pos.y === posY)) {
+            if (
+              props.enPassant &&
+              posX === props.enPassant.target.x &&
+              posY === props.enPassant.target.y
+            ) {
+              if (props.enPassantMove)
+                props.enPassantMove(
+                  props.position,
+                  { x: posX, y: posY },
+                  props.color === "black" ? 16 : 6
+                );
+            } else if (props.place)
               props.place(
                 props.position,
                 { x: posX, y: posY },
                 props.color === "black" ? 16 : 6
               );
-          } else if( pawnCheck(
-            props.board,
-            props.position,
-            { x: posX, y: posY },
-            props.isFirst,
-            props.color,
-            props.enPassant
-          ) === "enPassant") {
-            if (props.enPassantMove) {
-            props.enPassantMove(
-              props.position,
-              { x: posX, y: posY },
-              props.color === "black" ? 16 : 6
-            );
-            }
           }
           setIsDown(false);
         }
@@ -64,7 +85,6 @@ function Pawn(props) {
   const mouseRightClick = useCallback(
     (e) => {
       if (isDown === true) {
-        console.log(pieceRef);
         e.preventDefault();
         setIsDown(false);
       }
@@ -85,7 +105,7 @@ function Pawn(props) {
   }, [mouseUpHandler]);
 
   return (
-    <td>
+    <div>
       {props.children}
       <div
         className={classnames(
@@ -117,7 +137,7 @@ function Pawn(props) {
       >
         P
       </div>
-    </td>
+    </div>
   );
 }
 

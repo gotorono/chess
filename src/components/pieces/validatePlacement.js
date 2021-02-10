@@ -130,358 +130,145 @@ const pawnTake = (board, oldPos, newPos, color) => {
   }
 };
 
-export const isCheckmate = (board, color) => {
-  board = _.cloneDeep(board);
-  let kingPosition = {};
+export const availablePawnSquares = (
+  board,
+  pos,
+  color,
+  enPassant,
+  firstMove
+) => {
+  let availableSquares = [];
 
-  let isCheckmate = true;
-
-  for (let i = 0; i < 8; i++) {
-    for (let j = 0; j < 8; j++) {
-      if (board[i][j] === 1 && color === "white") {
-        kingPosition.x = j;
-        kingPosition.y = i;
-      } else if (board[i][j] === 11 && color === "black") {
-        kingPosition.x = j;
-        kingPosition.y = i;
-      }
-    }
-  }
-
-  for (let i = 0; i < 8; i++) {
-    for (let j = 0; j < 8; j++) {
-      if (color === "black") {
-        switch (board[i][j]) {
-          case 11:
-            kingSquares(board, { x: j, y: i }, color).map((pos) => {
-              if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 11))
-                isCheckmate = false;
-              return pos;
-            });
-            if (isCheckmate === false) return false;
-            break;
-          case 12:
-            if (
-              [
-                ...getDiagonalSquares(board, { x: j, y: i }, color),
-                ...getVerticalHorizontalSquares(board, { x: j, y: i }, color),
-              ].map((pos) => {
-                if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 12))
-                  isCheckmate = false;
-                return pos;
-              })
-            )
-              if (isCheckmate === false) return false;
-            break;
-          case 13:
-            if (
-              getVerticalHorizontalSquares(board, { x: j, y: i }, color).map(
-                (pos) => {
-                  if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 13))
-                    isCheckmate = false;
-                  return pos;
-                }
-              )
-            )
-              if (isCheckmate === false) return false;
-            break;
-          case 14:
-            knightSquares(board, { x: j, y: i }, color).map((pos) => {
-              if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 14))
-                isCheckmate = false;
-              return pos;
-            });
-            if (isCheckmate === false) return false;
-            break;
-          case 15:
-            if (
-              getDiagonalSquares(board, { x: j, y: i }, color).map((pos) => {
-                if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 15))
-                  isCheckmate = false;
-                return pos;
-              })
-            )
-              if (isCheckmate === false) return false;
-            break;
-          case 16:
-            if (pawnCanStopCheckmate(board, { x: j, y: i }, color))
-              isCheckmate = false;
-            if (isCheckmate === false) return false;
-            break;
-          default:
-            break;
-        }
-      } else {
-        switch (board[i][j]) {
-          case 1:
-            kingSquares(board, { x: j, y: i }, color).map((pos) => {
-              if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 1))
-                isCheckmate = false;
-              return pos;
-            });
-            if (isCheckmate === false) return false;
-            break;
-          case 2:
-            if (
-              [
-                ...getDiagonalSquares(board, { x: j, y: i }, color),
-                ...getVerticalHorizontalSquares(board, { x: j, y: i }, color),
-              ].map((pos) => {
-                if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 2))
-                  isCheckmate = false;
-                return pos;
-              })
-            )
-              if (isCheckmate === false) return false;
-            break;
-          case 3:
-            if (
-              getVerticalHorizontalSquares(board, { x: j, y: i }, color).map(
-                (pos) => {
-                  if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 3))
-                    isCheckmate = false;
-                  return pos;
-                }
-              )
-            )
-              if (isCheckmate === false) return false;
-            break;
-          case 4:
-            knightSquares(board, { x: j, y: i }, color).map((pos) => {
-              if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 4))
-                isCheckmate = false;
-              return pos;
-            });
-            if (isCheckmate === false) return false;
-            break;
-          case 5:
-            if (
-              getDiagonalSquares(board, { x: j, y: i }, color).map((pos) => {
-                if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 5))
-                  isCheckmate = false;
-                return pos;
-              })
-            )
-              if (isCheckmate === false) return false;
-            break;
-          case 6:
-            if (pawnCanStopCheckmate(board, { x: j, y: i }, color))
-              isCheckmate = false;
-            if (isCheckmate === false) return false;
-            break;
-          default:
-            break;
-        }
-      }
-    }
-  }
-
-  return isCheckmate;
-};
-
-const pawnCanStopCheckmate = (board, pos, color) => {
-  if (color === "black") {
-    if (pos.y + 1 < 8) {
-      if (board[pos.y + 1][pos.x] === 0) {
-        if (
-          !isNewBoardInCheck(board, pos, { x: pos.x, y: pos.y + 1 }, color, 16)
-        )
-          return true;
-      } else if (pos.x + 1 < 8 && take(board, pos, color)) {
-        if (
-          !isNewBoardInCheck(
-            board,
-            pos,
-            { x: pos.x + 1, y: pos.y + 1 },
-            color,
-            16
-          )
-        )
-          return true;
-      } else if (pos.x - 1 >= 0 && take(board, pos, color)) {
-        if (
-          !isNewBoardInCheck(
-            board,
-            pos,
-            { x: pos.x - 1, y: pos.y + 1 },
-            color,
-            16
-          )
-        )
-          return true;
-      }
-    }
-  } else {
-    if (pos.y - 1 >= 0) {
-      if (board[pos.y - 1][pos.x] === 0) {
-        if (
-          !isNewBoardInCheck(board, pos, { x: pos.x, y: pos.y - 1 }, color, 6)
-        )
-          return true;
-      } else if (pos.x + 1 < 8 && take(board, pos, color)) {
-        if (
-          !isNewBoardInCheck(
-            board,
-            pos,
-            { x: pos.x + 1, y: pos.y - 1 },
-            color,
-            6
-          )
-        )
-          return true;
-      } else if (pos.x - 1 >= 0 && take(board, pos, color)) {
-        if (
-          !isNewBoardInCheck(
-            board,
-            pos,
-            { x: pos.x - 1, y: pos.y - 1 },
-            color,
-            6
-          )
-        )
-          return true;
-      }
-    }
-  }
-
-  return false;
-};
-
-const pawnCanMove = (board, pos, color) => {
-  if (color === "black") {
+  if (color === "white") {
+    if (pos.y - 1 >= 0 && board[pos.y - 1][pos.x] === 0)
+      availableSquares.push({ x: pos.x, y: pos.y - 1 });
     if (
-      pos.y + 1 < 8 &&
-      board[pos.y + 1][pos.x] === 0 &&
-      !isNewBoardInCheck(board, pos, { x: pos.x, y: pos.y + 1 }, color, 16)
-    )
-      return true;
-    else if (
-      pos.y + 1 < 8 &&
-      pos.x + 1 < 8 &&
-      take(board, { x: pos.x + 1, y: pos.y + 1 }, color) &&
-      !isNewBoardInCheck(board, pos, { x: pos.x + 1, y: pos.y + 1 }, color, 16)
-    )
-      return true;
-    else if (
-      pos.y + 1 < 8 &&
-      pos.x - 1 >= 0 &&
-      take(board, { x: pos.x - 1, y: pos.y + 1 }, color) &&
-      !isNewBoardInCheck(board, pos, { x: pos.x - 1, y: pos.y + 1 }, color, 16)
-    )
-      return true;
-  } else {
-    if (
-      pos.y - 1 >= 0 &&
+      pos.y - 2 >= 0 &&
+      board[pos.y - 2][pos.x] === 0 &&
       board[pos.y - 1][pos.x] === 0 &&
-      !isNewBoardInCheck(board, pos, { x: pos.x, y: pos.y - 1 }, color, 6)
+      firstMove === true
     )
-      return true;
-    else if (
+      availableSquares.push({ x: pos.x, y: pos.y - 2 });
+    if (
       pos.y - 1 >= 0 &&
       pos.x + 1 < 8 &&
-      take(board, { x: pos.x + 1, y: pos.y - 1 }, color) &&
-      !isNewBoardInCheck(board, pos, { x: pos.x + 1, y: pos.y - 1 }, color, 6)
+      pawnTake(board, pos, { x: pos.x + 1, y: pos.y - 1 }, color)
     )
-      return true;
-    else if (
+      availableSquares.push({ x: pos.x + 1, y: pos.y - 1 });
+    if (
       pos.y - 1 >= 0 &&
       pos.x - 1 >= 0 &&
-      take(board, { x: pos.x - 1, y: pos.y - 1 }, color) &&
-      !isNewBoardInCheck(board, pos, { x: pos.x - 1, y: pos.y - 1 }, color, 6)
+      pawnTake(board, pos, { x: pos.x - 1, y: pos.y - 1 }, color)
     )
-      return true;
+      availableSquares.push({ x: pos.x - 1, y: pos.y - 1 });
+    if (
+      enPassant &&
+      enPassant.target &&
+      enPassant.target.x === pos.x + 1 &&
+      enPassant.target.y === pos.y - 1
+    )
+      availableSquares.push({ x: pos.x + 1, y: pos.y - 1 });
+    if (
+      enPassant &&
+      enPassant.target &&
+      enPassant.target.x === pos.x - 1 &&
+      enPassant.target.y === pos.y - 1
+    )
+      availableSquares.push({ x: pos.x - 1, y: pos.y - 1 });
+  } else {
+    if (pos.y + 1 < 8 && board[pos.y + 1][pos.x] === 0)
+      availableSquares.push({ x: pos.x, y: pos.y + 1 });
+    if (pos.y + 2 < 8 && board[pos.y + 2][pos.x] === 0 && firstMove === true)
+      availableSquares.push({ x: pos.x, y: pos.y + 2 });
+    if (
+      pos.y + 1 < 8 &&
+      pos.x + 1 < 8 &&
+      board &&
+      pawnTake(board, pos, { x: pos.x + 1, y: pos.y + 1 }, color)
+    )
+      availableSquares.push({ x: pos.x + 1, y: pos.y + 1 });
+    if (
+      pos.y + 1 < 8 &&
+      pos.x - 1 >= 0 &&
+      pawnTake(board, pos, { x: pos.x - 1, y: pos.y + 1 }, color)
+    )
+      availableSquares.push({ x: pos.x - 1, y: pos.y + 1 });
+    if (
+      enPassant &&
+      enPassant.target &&
+      enPassant.target.x === pos.x + 1 &&
+      enPassant.target.y === pos.y + 1
+    )
+      availableSquares.push({ x: pos.x + 1, y: pos.y + 1 });
+    if (
+      enPassant &&
+      enPassant.target &&
+      enPassant.target.x === pos.x - 1 &&
+      enPassant.target.y === pos.y + 1
+    )
+      availableSquares.push({ x: pos.x - 1, y: pos.y + 1 });
   }
 
-  return false;
+  availableSquares = availableSquares.filter(
+    (square) =>
+      isNewBoardInCheck(
+        board,
+        pos,
+        square,
+        color,
+        color === "white" ? 6 : 16
+      ) === false
+  );
+
+  return availableSquares;
 };
 
-const checkIfStalematePiece = (board, squares, oldPos, piece, color) => {
-  let returnedValue = true;
-
-  if (squares.length !== 0) {
-    squares.map((pos) => {
-      if (!isNewBoardInCheck(board, oldPos, pos, color, piece))
-        returnedValue = false;
-      return pos;
-    });
-    return returnedValue;
-  } else return true;
-};
-
-export const checkIfStalemate = (board, color, enPassant) => {
-  let isStalemate = true;
-
+export const isCheckmateOrStalemate = (board, color, enPassant) => {
   for (let i = 0; i < 8; i++) {
     for (let j = 0; j < 8; j++) {
       if (color === "black") {
         switch (board[i][j]) {
           case 11:
-            kingSquares(board, { x: j, y: i }, color).map((pos) => {
-              if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 11))
-                isStalemate = false;
-              return pos;
-            });
-            if (isStalemate === false) return false;
+            if (availableKingSquares(board, { x: j, y: i }, color).length > 0)
+              return false;
             break;
           case 12:
             if (
-              checkIfStalematePiece(
-                board,
-                [
-                  ...getDiagonalSquares(board, { x: j, y: i }, color),
-                  ...getVerticalHorizontalSquares(board, { x: j, y: i }, color),
-                ],
-                { x: j, y: i },
-                12,
-                color
-              ) === false
+              availableQueenSquares(board, color, { x: j, y: i }, 12).length > 0
             )
-              isStalemate = false;
-            if (isStalemate === false) return false;
+              return false;
             break;
           case 13:
             if (
-              checkIfStalematePiece(
-                board,
-                getVerticalHorizontalSquares(board, { x: j, y: i }, color),
-                { x: j, y: i },
-                13,
-                color
-              ) === false
+              availableRookSquares(board, color, { x: j, y: i }, 13).length > 0
             )
-              isStalemate = false;
-            if (isStalemate === false) return false;
+              return false;
             break;
           case 14:
             if (
-              checkIfStalematePiece(
-                board,
-                knightSquares(board, { x: j, y: i }, color),
-                { x: j, y: i },
-                14,
-                color
-              ) === false
+              availableKnightSquares(board, color, { x: j, y: i }, 14).length >
+              0
             )
-              isStalemate = false;
-            if (isStalemate === false) return false;
+              return false;
             break;
           case 15:
             if (
-              checkIfStalematePiece(
-                board,
-                getDiagonalSquares(board, { x: j, y: i }, color),
-                { x: j, y: i },
-                15,
-                color
-              ) === false
+              availableBishopSquares(board, color, { x: j, y: i }, 15).length >
+              0
             )
-              isStalemate = false;
-            if (isStalemate === false) return false;
+              return false;
             break;
           case 16:
-            if (pawnCanMove(board, { x: j, y: i }, color) === true)
-              isStalemate = false;
-            if (isStalemate === false) return false;
+            if (
+              availablePawnSquares(
+                board,
+                { x: j, y: i },
+                color,
+                enPassant,
+                i === 1 ? true : false
+              ).length > 0
+            )
+              return false;
             break;
           default:
             break;
@@ -489,71 +276,44 @@ export const checkIfStalemate = (board, color, enPassant) => {
       } else {
         switch (board[i][j]) {
           case 1:
-            kingSquares(board, { x: j, y: i }, color).map((pos) => {
-              if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 1))
-                isStalemate = false;
-              return pos;
-            });
-            if (isStalemate === false) return false;
+            if (availableKingSquares(board, { x: j, y: i }, color).length > 0)
+              return false;
             break;
           case 2:
             if (
-              checkIfStalematePiece(
-                board,
-                [
-                  ...getDiagonalSquares(board, { x: j, y: i }, color),
-                  ...getVerticalHorizontalSquares(board, { x: j, y: i }, color),
-                ],
-                { x: j, y: i },
-                2
-              ) === false
+              availableQueenSquares(board, color, { x: j, y: i }, 2).length > 0
             )
-              isStalemate = false;
-            if (isStalemate === false) return false;
+              return false;
             break;
           case 3:
             if (
-              checkIfStalematePiece(
-                board,
-                getVerticalHorizontalSquares(board, { x: j, y: i }, color),
-                { x: j, y: i },
-                3,
-                color
-              ) === false
+              availableRookSquares(board, color, { x: j, y: i }, 3).length > 0
             )
-              isStalemate = false;
-            if (isStalemate === false) return false;
+              return false;
             break;
           case 4:
             if (
-              checkIfStalematePiece(
-                board,
-                knightSquares(board, { x: j, y: i }, color),
-                { x: j, y: i },
-                4,
-                color
-              ) === false
+              availableKnightSquares(board, color, { x: j, y: i }, 4).length > 0
             )
-              isStalemate = false;
-            if (isStalemate === false) return false;
+              return false;
             break;
           case 5:
             if (
-              checkIfStalematePiece(
-                board,
-                getDiagonalSquares(board, { x: j, y: i }, color),
-                { x: j, y: i },
-                5,
-                color
-              ) === false
+              availableBishopSquares(board, color, { x: j, y: i }, 5).length > 0
             )
-              isStalemate = false;
-            if (isStalemate === false) return false;
+              return false;
             break;
           case 6:
-            if (pawnCanMove(board, { x: j, y: i }, color) === true)
-              isStalemate = false;
-            if (isStalemate === false) return false;
+            if (
+              availablePawnSquares(
+                board,
+                { x: j, y: i },
+                color,
+                enPassant,
+                i === 6 ? true : false
+              ).length > 0
+            )
+              return false;
             break;
           default:
             break;
@@ -562,9 +322,7 @@ export const checkIfStalemate = (board, color, enPassant) => {
     }
   }
 
-  if (enPassant.pawns.length > 0) return false;
-
-  return isStalemate;
+  return true;
 };
 
 export const checkIfKingIsInCheck = (board, color) => {
@@ -696,6 +454,21 @@ export const checkIfKingIsInCheck = (board, color) => {
   return false;
 };
 
+export const availableKingSquares = (board, pos, color, canCastle) => {
+  let availableSquares = [];
+
+  kingSquares(board, pos, color).map((newPos) => {
+    if (
+      !isNewBoardInCheck(board, pos, newPos, color, color === "white" ? 1 : 11)
+    )
+      availableSquares.push(newPos);
+  });
+  if(canCastle)
+    availableSquares = [...availableSquares, ...castleCheckTwo(board, pos, canCastle, color)];
+
+  return availableSquares;
+};
+
 export const kingSquares = (board, pos, color) => {
   let availableSquares = [];
 
@@ -817,25 +590,32 @@ export const knightSquares = (board, pos, color) => {
   return availableSquares;
 };
 
-export const availableRookSquares = (board, color) => {
+export const availableRookSquares = (board, color, pos, piece) => {
   let availableSquares = [];
 
-  for (let i = 0; i < 8; i++) {
-    for (let j = 0; j < 8; j++) {
-      if (board[i][j] === 3 && color === "white") {
-        getVerticalHorizontalSquares(board, { x: j, y: i }, color).map(
-          (pos) => {
-            if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 3))
-              availableSquares.push(pos);
-          }
-        );
-      } else if (board[i][j] === 13 && color === "black") {
-        getVerticalHorizontalSquares(board, { x: j, y: i }, color).map(
-          (pos) => {
-            if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 13))
-              availableSquares.push(pos);
-          }
-        );
+  if (pos && piece) {
+    getVerticalHorizontalSquares(board, pos, color).map((square) => {
+      if (!isNewBoardInCheck(board, pos, square, color, piece))
+        availableSquares.push(square);
+    });
+  } else {
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        if (board[i][j] === 3 && color === "white") {
+          getVerticalHorizontalSquares(board, { x: j, y: i }, color).map(
+            (pos) => {
+              if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 3))
+                availableSquares.push(pos);
+            }
+          );
+        } else if (board[i][j] === 13 && color === "black") {
+          getVerticalHorizontalSquares(board, { x: j, y: i }, color).map(
+            (pos) => {
+              if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 13))
+                availableSquares.push(pos);
+            }
+          );
+        }
       }
     }
   }
@@ -843,27 +623,37 @@ export const availableRookSquares = (board, color) => {
   return availableSquares;
 };
 
-export const availableQueenSquares = (board, color) => {
+export const availableQueenSquares = (board, color, pos, piece) => {
   let availableSquares = [];
 
-  for (let i = 0; i < 8; i++) {
-    for (let j = 0; j < 8; j++) {
-      if (board[i][j] === 2 && color === "white") {
-        [
-          ...getDiagonalSquares(board, { x: j, y: i }, color),
-          ...getVerticalHorizontalSquares(board, { x: j, y: i }, color),
-        ].map((pos) => {
-          if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 2))
-            availableSquares.push(pos);
-        });
-      } else if (board[i][j] === 12 && color === "black") {
-        [
-          ...getDiagonalSquares(board, { x: j, y: i }, color),
-          ...getVerticalHorizontalSquares(board, { x: j, y: i }, color),
-        ].map((pos) => {
-          if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 12))
-            availableSquares.push(pos);
-        });
+  if (pos && piece) {
+    [
+      ...getDiagonalSquares(board, pos, color),
+      ...getVerticalHorizontalSquares(board, pos, color),
+    ].map((square) => {
+      if (!isNewBoardInCheck(board, pos, square, color, piece))
+        availableSquares.push(square);
+    });
+  } else {
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        if (board[i][j] === 2 && color === "white") {
+          [
+            ...getDiagonalSquares(board, { x: j, y: i }, color),
+            ...getVerticalHorizontalSquares(board, { x: j, y: i }, color),
+          ].map((pos) => {
+            if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 2))
+              availableSquares.push(pos);
+          });
+        } else if (board[i][j] === 12 && color === "black") {
+          [
+            ...getDiagonalSquares(board, { x: j, y: i }, color),
+            ...getVerticalHorizontalSquares(board, { x: j, y: i }, color),
+          ].map((pos) => {
+            if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 12))
+              availableSquares.push(pos);
+          });
+        }
       }
     }
   }
@@ -871,21 +661,28 @@ export const availableQueenSquares = (board, color) => {
   return availableSquares;
 };
 
-export const availableBishopSquares = (board, color) => {
+export const availableBishopSquares = (board, color, pos, piece) => {
   let availableSquares = [];
 
-  for (let i = 0; i < 8; i++) {
-    for (let j = 0; j < 8; j++) {
-      if (board[i][j] === 5 && color === "white") {
-        getDiagonalSquares(board, { x: j, y: i }, color).map((pos) => {
-          if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 5))
-            availableSquares.push(pos);
-        });
-      } else if (board[i][j] === 15 && color === "black") {
-        getDiagonalSquares(board, { x: j, y: i }, color).map((pos) => {
-          if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 15))
-            availableSquares.push(pos);
-        });
+  if (pos && piece) {
+    getDiagonalSquares(board, pos, color).map((square) => {
+      if (!isNewBoardInCheck(board, pos, square, color, piece))
+        availableSquares.push(square);
+    });
+  } else {
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        if (board[i][j] === 5 && color === "white") {
+          getDiagonalSquares(board, { x: j, y: i }, color).map((pos) => {
+            if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 5))
+              availableSquares.push(pos);
+          });
+        } else if (board[i][j] === 15 && color === "black") {
+          getDiagonalSquares(board, { x: j, y: i }, color).map((pos) => {
+            if (!isNewBoardInCheck(board, { x: j, y: i }, pos, color, 15))
+              availableSquares.push(pos);
+          });
+        }
       }
     }
   }
@@ -944,103 +741,6 @@ export const availableKnightSquares = (board, color, pos, piece) => {
   return availableSquares;
 };
 
-export const pawnCheck = (
-  board,
-  oldPos,
-  newPos,
-  firstMove,
-  color,
-  enPassant
-) => {
-  if (
-    board[newPos.y][newPos.x] !== 0 &&
-    !pawnTake(board, oldPos, newPos, color)
-  )
-    return false;
-  else if (
-    newPos.y === oldPos.y - 1 &&
-    newPos.x === oldPos.x &&
-    color === "white"
-  )
-    return true;
-  else if (
-    newPos.y === oldPos.y - 2 &&
-    board[newPos.y + 1][newPos.x] === 0 &&
-    firstMove === true &&
-    newPos.x === oldPos.x &&
-    color === "white"
-  )
-    return true;
-  else if (
-    newPos.y === oldPos.y + 1 &&
-    newPos.x === oldPos.x &&
-    color === "black"
-  )
-    return true;
-  else if (
-    newPos.y === oldPos.y + 2 &&
-    board[newPos.y - 1][newPos.x] === 0 &&
-    firstMove === true &&
-    newPos.x === oldPos.x &&
-    color === "black"
-  )
-    return true;
-  else if (
-    enPassant &&
-    enPassant.target.x === newPos.x &&
-    enPassant.target.y === newPos.y
-  )
-    return "enPassant";
-  else if (pawnTake(board, oldPos, newPos, color)) return true;
-  else return false;
-};
-
-export const knightCheck = (board, pos, newPos, color) => {
-  if (
-    knightSquares(board, pos, color).find(
-      (av) => av.x === newPos.x && av.y === newPos.y
-    )
-  )
-    return true;
-  else return false;
-};
-
-export const rookCheck = (board, pos, newPos, color) => {
-  if (
-    getVerticalHorizontalSquares(board, pos, color).find(
-      (av) => av.x === newPos.x && av.y === newPos.y
-    )
-  )
-    return true;
-  else return false;
-};
-
-export const bishopCheck = (board, pos, newPos, color) => {
-  if (
-    getDiagonalSquares(board, pos, color).find(
-      (av) => av.x === newPos.x && av.y === newPos.y
-    )
-  )
-    return true;
-  else return false;
-};
-
-export const queenCheck = (board, pos, newPos, color) => {
-  if (
-    getVerticalHorizontalSquares(board, pos, color).find(
-      (av) => av.x === newPos.x && av.y === newPos.y
-    )
-  )
-    return true;
-  else if (
-    getDiagonalSquares(board, pos, color).find(
-      (av) => av.x === newPos.x && av.y === newPos.y
-    )
-  )
-    return true;
-  else return false;
-};
-
 const isNewBoardInCheck = (board, oldKpos, newKpos, color, piece) => {
   board = _.cloneDeep(board);
 
@@ -1051,69 +751,57 @@ const isNewBoardInCheck = (board, oldKpos, newKpos, color, piece) => {
   else return false;
 };
 
-const castleCheck = (board, oldKpos, newKpos, canCastle, color) => {
+const castleCheckTwo = (board, pos, canCastle, color) => {
+  let availableCastles = [];
+
   if (
-    newKpos.x === oldKpos.x + 2 &&
-    board[newKpos.y][newKpos.x] === 0 &&
-    board[newKpos.y][newKpos.x - 1] === 0 &&
+    board[pos.y][pos.x + 2] === 0 &&
+    board[pos.y][pos.x + 1] === 0 &&
     canCastle.kingside === true
-  ) {
-    let newBoards = [_.cloneDeep(board), _.cloneDeep(board)];
-    for (let k = 0; k < newBoards.length; k++)
-      if (
-        isNewBoardInCheck(
-          newBoards[k],
-          oldKpos,
-          newKpos,
-          color,
-          color === "white" ? 1 : 11
-        )
-      )
-        return false;
-    return "kingside";
-  } else if (
-    newKpos.x === oldKpos.x - 2 &&
-    board[newKpos.y][newKpos.x] === 0 &&
-    board[newKpos.y][newKpos.x + 1] === 0 &&
-    board[newKpos.y][newKpos.x - 1] === 0 &&
-    canCastle.queenside === true
-  ) {
-    let newBoards = [_.cloneDeep(board), _.cloneDeep(board)];
-    for (let k = 0; k < newBoards.length; k++)
-      if (
-        isNewBoardInCheck(
-          newBoards[k],
-          oldKpos,
-          newKpos,
-          color,
-          color === "white" ? 1 : 11
-        )
-      )
-        return false;
-    return "queenside";
-  }
-};
-
-export const kingCheck = (board, pos, newPos, color, canCastle) => {
-  board = _.cloneDeep(board);
-
-  if (castleCheck(board, pos, newPos, canCastle, color) === "kingside")
-    return "kingside";
-  else if (castleCheck(board, pos, newPos, canCastle, color))
-    return "queenside";
-  else if (
-    kingSquares(board, pos, color).find(
-      (av) => av.x === newPos.x && av.y === newPos.y
-    )
-  ) {
+  )
     if (
-      !isNewBoardInCheck(board, pos, newPos, color, color === "white" ? 1 : 11)
+      !isNewBoardInCheck(
+        board,
+        pos,
+        { x: pos.x + 1, y: pos.y },
+        color,
+        color === "white" ? 1 : 11
+      ) &&
+      !isNewBoardInCheck(
+        board,
+        pos,
+        { x: pos.x + 2, y: pos.y },
+        color,
+        color === "white" ? 1 : 11
+      )
     )
-      return true;
-    else return false;
-  }
+      availableCastles.push({ x: pos.x + 2, y: pos.y });
 
-  return false;
+  if (
+    board[pos.y][pos.x - 3] === 0 &&
+    board[pos.y][pos.x - 2] === 0 &&
+    board[pos.y][pos.x - 1] === 0 &&
+    canCastle.queenside === true
+  )
+    if (
+      !isNewBoardInCheck(
+        board,
+        pos,
+        { x: pos.x + 1, y: pos.y },
+        color,
+        color === "white" ? 1 : 11
+      ) &&
+      !isNewBoardInCheck(
+        board,
+        pos,
+        { x: pos.x + 2, y: pos.y },
+        color,
+        color === "white" ? 1 : 11
+      )
+    )
+      availableCastles.push({ x: pos.x - 2, y: pos.y });
+
+    return availableCastles;
 };
 
 const determineSquareColor = (pos) => {
@@ -1126,7 +814,7 @@ const determineSquareColor = (pos) => {
   }
 };
 
-export const isDraw = (board, boardHistory, turn) => {
+export const isDraw = (board, boardHistory) => {
   let pieces = [];
   let bishops = [];
 

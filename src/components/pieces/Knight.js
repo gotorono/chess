@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import useMousePosition from "./useMousePosition";
 
-import { knightCheck, availableKnightSquares } from "./validatePlacement";
+import { availableKnightSquares } from "./validatePlacement";
 
 import { newX, newY, translateX, translateY } from "./positionPlacement";
 
@@ -9,22 +9,44 @@ import classnames from "classnames";
 
 function Knight(props) {
   const [isDown, setIsDown] = useState(false);
-  const [available, setAvailable] = useState([])
+  const [available, setAvailable] = useState([]);
 
   const pieceRef = React.useRef();
 
   const { x, y } = useMousePosition(isDown);
 
   useEffect(() => {
-    setAvailable(availableKnightSquares(props.board, props.color, props.position, props.color === "black" ? 14 : 4))
-  }, [props.board])
+    if (props.board)
+      setAvailable(
+        availableKnightSquares(
+          props.board,
+          props.color,
+          props.position,
+          props.color === "black" ? 14 : 4
+        )
+      );
+  }, [props.board]);
 
   useEffect(() => {
-    if(isDown === true)
-      props.grabbing(true, available)
-    else
-      props.grabbing(false, available)
-  }, [available, isDown])
+    if(isDown === false)
+    if(props.grabbing)
+      props.grabbing(false, available, null, props.position);
+  }, [isDown]);
+
+  useEffect(() => {
+    if (isDown === true) {
+      props.grabbing(
+        isDown,
+        available,
+        {
+          x: newX(x, pieceRef, props.playing),
+          y: newY(y, pieceRef, props.playing),
+        },
+        props.position,
+        props.color
+      );
+    }
+  }, [isDown, pieceRef, available, x, y]);
 
   const mouseRightClick = useCallback(
     (e) => {
@@ -49,9 +71,7 @@ function Knight(props) {
           let posX = newX(x, pieceRef, props.playing);
           let posY = newY(y, pieceRef, props.playing);
 
-          if (
-            available.find((pos) => pos.x === posX && pos.y === posY)
-          ) {
+          if (available.find((pos) => pos.x === posX && pos.y === posY)) {
             if (props.place)
               props.place(
                 props.position,
@@ -73,7 +93,7 @@ function Knight(props) {
   }, [mouseUpHandler]);
 
   return (
-    <td>
+    <div>
       {props.children}
       <div
         className={classnames(
@@ -105,7 +125,7 @@ function Knight(props) {
       >
         N
       </div>
-    </td>
+    </div>
   );
 }
 

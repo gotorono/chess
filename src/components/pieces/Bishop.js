@@ -16,15 +16,30 @@ function Bishop(props) {
   const { x, y } = useMousePosition(isDown);
 
   useEffect(() => {
+    if (props.board)
     setAvailable(availableBishopSquares(props.board, props.color, props.position, props.color === "black" ? 15 : 5))
   }, [props.board])
 
   useEffect(() => {
-    if(isDown === true)
-      props.grabbing(true, available)
-    else
-      props.grabbing(false, available)
-  }, [available, isDown])
+    if(isDown === false)
+    if(props.grabbing)
+      props.grabbing(false, available, null, props.position);
+  }, [isDown]);
+
+  useEffect(() => {
+    if (isDown === true) {
+      props.grabbing(
+        isDown,
+        available,
+        {
+          x: newX(x, pieceRef, props.playing),
+          y: newY(y, pieceRef, props.playing),
+        },
+        props.position,
+        props.color
+      );
+    }
+  }, [isDown, pieceRef, available, x, y]);
 
   const mouseRightClick = useCallback(
     (e) => {
@@ -73,7 +88,7 @@ function Bishop(props) {
   }, [mouseUpHandler]);
 
   return (
-    <td>
+    <div>
       {props.children}
       <div
         className={classnames(
@@ -105,7 +120,7 @@ function Bishop(props) {
       >
         B
       </div>
-    </td>
+    </div>
   );
 }
 

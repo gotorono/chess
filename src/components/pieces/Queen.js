@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import useMousePosition from "./useMousePosition";
 
-import { queenCheck, availableQueenSquares } from "./validatePlacement";
+import { availableQueenSquares } from "./validatePlacement";
 
 import { newX, newY, translateX, translateY } from "./positionPlacement";
 
@@ -16,15 +16,30 @@ function Queen(props) {
   const { x, y } = useMousePosition(isDown);
 
   useEffect(() => {
+    if (props.board)
     setAvailable(availableQueenSquares(props.board, props.color, props.position, props.color === "black" ? 15 : 5))
   }, [props.board])
 
   useEffect(() => {
-    if(isDown === true)
-      props.grabbing(true, available)
-    else
-      props.grabbing(false, available)
-  }, [available, isDown])
+    if(isDown === false)
+    if(props.grabbing)
+      props.grabbing(false, available, null, props.position);
+  }, [isDown]);
+
+  useEffect(() => {
+    if (isDown === true) {
+      props.grabbing(
+        isDown,
+        available,
+        {
+          x: newX(x, pieceRef, props.playing),
+          y: newY(y, pieceRef, props.playing),
+        },
+        props.position,
+        props.color
+      );
+    }
+  }, [isDown, pieceRef, available, x, y]);
 
   const mouseRightClick = useCallback(
     (e) => {
@@ -73,7 +88,7 @@ function Queen(props) {
   }, [mouseUpHandler]);
 
   return (
-    <td>
+    <div>
       {props.children}
       <div
         className={classnames(
@@ -105,7 +120,7 @@ function Queen(props) {
       >
         Q
       </div>
-    </td>
+    </div>
   );
 }
 

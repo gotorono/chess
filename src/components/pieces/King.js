@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import useMousePosition from "./useMousePosition";
 
-import { kingCheck, kingSquares } from "./validatePlacement";
+import { availableKingSquares } from "./validatePlacement";
 
 import { newX, newY, translateX, translateY } from "./positionPlacement";
 
@@ -9,10 +9,44 @@ import classnames from "classnames";
 
 function King(props) {
   const [isDown, setIsDown] = useState(false);
+  const [available, setAvailable] = useState([]);
 
   const pieceRef = React.useRef();
 
   const { x, y } = useMousePosition(isDown);
+
+  useEffect(() => {
+    if (props.board)
+      setAvailable(
+        availableKingSquares(
+          props.board,
+          props.position,
+          props.color,
+          props.canCastle
+        )
+      );
+  }, [props.board]);
+
+  useEffect(() => {
+    if(isDown === false)
+    if(props.grabbing)
+      props.grabbing(false, available, null, props.position);
+  }, [isDown]);
+
+  useEffect(() => {
+    if (isDown === true) {
+      props.grabbing(
+        isDown,
+        available,
+        {
+          x: newX(x, pieceRef, props.playing),
+          y: newY(y, pieceRef, props.playing),
+        },
+        props.position,
+        props.color
+      );
+    }
+  }, [isDown, pieceRef, available, x, y]);
 
   const mouseRightClick = useCallback(
     (e) => {
@@ -37,47 +71,31 @@ function King(props) {
           let posX = newX(x, pieceRef, props.playing);
           let posY = newY(y, pieceRef, props.playing);
 
-          let check = kingCheck(
-            props.board,
-            props.position,
-            { x: posX, y: posY },
-            props.color,
-            props.canCastle
-          );
-
-          console.log(check);
-
-          if (check === true) {
-            if (props.place)
-              props.place(
-                props.position,
-                { x: posX, y: posY },
-                props.color === "black" ? 11 : 1
-              );
-          } else if (
-            props.canCastle.queenside === true &&
-            check === "queenside"
-          ) {
-            if (props.castles) {
-              props.castles(
-                "queenside",
-                props.position,
-                { x: posX, y: posY },
-                props.color === "black" ? 11 : 1
-              );
-            }
-          } else if (
-            props.canCastle.kingside === true &&
-            check === "kingside"
-          ) {
-            if (props.castles) {
-              props.castles(
-                "kingside",
-                props.position,
-                { x: posX, y: posY },
-                props.color === "black" ? 11 : 1
-              );
-            }
+          if (available.find((pos) => pos.x === posX && pos.y === posY)) {
+            if (posX === props.position.x + 2) {
+              if (props.castles) 
+                props.castles(
+                  "kingside",
+                  props.position,
+                  { x: posX, y: posY },
+                  props.color === "black" ? 11 : 1
+                );
+              } else if (posX === props.position.x - 2) {
+                if (props.castles)
+                  props.castles(
+                    "queenside",
+                    props.position,
+                    { x: posX, y: posY },
+                    props.color === "black" ? 11 : 1
+                  );
+              } else {
+                if (props.place)
+                  props.place(
+                    props.position,
+                    { x: posX, y: posY },
+                    props.color === "black" ? 11 : 1
+                  );
+              }
           }
           setIsDown(false);
         }
@@ -93,7 +111,7 @@ function King(props) {
   }, [mouseUpHandler]);
 
   return (
-    <td>
+    <div>
       {props.children}
       <div
         className={classnames(
@@ -125,7 +143,7 @@ function King(props) {
       >
         K
       </div>
-    </td>
+    </div>
   );
 }
 

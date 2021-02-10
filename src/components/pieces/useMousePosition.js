@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 
-const useMousePosition = (isDown, history) => {
+const useMousePosition = (isDown) => {
   const [mousePosition, setMousePosition] = useState({ x: null, y: null });
 
   const updateMousePosition = useCallback(
@@ -17,7 +17,6 @@ const useMousePosition = (isDown, history) => {
       window.addEventListener("mousemove", updateMousePosition);
 
     return () => {
-      setMousePosition({ x: null, y: null });
       window.removeEventListener("mousemove", updateMousePosition);
       window.removeEventListener("mousedown", (e) => setMousePosition({x: e.clientX, y: e.clientY}));
     };
