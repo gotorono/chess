@@ -614,7 +614,7 @@ function Board(props) {
           setBoard(newBoard);
         }
       } else {
-        console.log("inCheck?");
+        console.log("in check");
       }
     },
     [refs.current, board, turn, canCastle, enPassant, moveHistory]
